@@ -1,0 +1,42 @@
+{
+  "name": "hyperagent-template-examples",
+  "version": "1.0.0",
+  "description": "Production-ready HyperAgent examples for browser automation",
+  "scripts": {
+    "airbnb": "tsx airbnb-property-extraction.ts",
+    "calendar": "tsx calendar-booking.ts",
+    "competitor": "tsx competitor-feature-comparison.ts",
+    "crm": "tsx crm-automation.ts",
+    "form": "tsx form-automation.ts",
+    "google-form": "tsx google-form-submission.ts",
+    "infinite-scroll": "tsx infinite-scroll-items.ts",
+    "links": "tsx link-extraction.ts",
+    "onboarding": "tsx multi-step-onboarding.ts",
+    "reddit": "tsx reddit-research.ts",
+    "seo": "tsx seo-content-structure.ts",
+    "slow-loading": "tsx slow-loading-ui-elements.ts",
+    "youtube": "tsx youtube-research.ts",
+    "airline:kayak": "cd airline-search-automation && npm run kayak",
+    "airline:google": "cd airline-search-automation && npm run google",
+    "airline:united": "cd airline-search-automation && npm run united",
+    "airline:delta": "cd airline-search-automation && npm run delta",
+    "airline:compare": "cd airline-search-automation && npm run compare"
+  },
+  "keywords": [
+    "hyperagent",
+    "hyperbrowser",
+    "automation",
+    "scraping",
+    "browser-automation"
+  ],
+  "dependencies": {
+    "@hyperbrowser/agent": "^1.0.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
+
