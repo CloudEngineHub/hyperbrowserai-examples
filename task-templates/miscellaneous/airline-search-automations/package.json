@@ -1,0 +1,30 @@
+{
+  "name": "airline-search-automation",
+  "version": "1.0.0",
+  "description": "Automate airline search and extract flight prices across multiple platforms",
+  "main": "index.ts",
+  "scripts": {
+    "kayak": "tsx kayak.ts",
+    "google": "tsx google-flights.ts",
+    "compare": "tsx compare-all.ts"
+  },
+  "keywords": [
+    "hyperagent",
+    "hyperbrowser",
+    "airline",
+    "automation",
+    "scraping",
+    "flight-search"
+  ],
+  "dependencies": {
+    "@hyperbrowser/agent": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
+
