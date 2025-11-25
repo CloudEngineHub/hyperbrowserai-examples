@@ -21,7 +21,7 @@ async function searchKayak() {
   const agent = new HyperAgent({
     llm: {
       provider: "openai",
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
     },
   });
 
@@ -30,6 +30,8 @@ async function searchKayak() {
   await page.goto("https://www.kayak.com/flights");
 
   await page.waitForTimeout(3000);
+
+  await page.aiAction("Click I understand button");
 
   await page.aiAction("click the origin input field");
   await page.aiAction("type MIA into the origin field");
@@ -47,12 +49,25 @@ async function searchKayak() {
 
   await page.aiAction("click the departure date field");
   await page.waitForTimeout(1000);
-  await page.aiAction("click on a date that is 7 days from today");
 
-  await page.waitForTimeout(1000);
-  await page.aiAction("click on a return date that is 14 days from today");
+  const curDate = new Date();
+  const sevenDaysFromNow = new Date(
+    curDate.getTime() + 7 * 24 * 60 * 60 * 1000
+  );
+  const fourteenDaysFromNow = new Date(
+    curDate.getTime() + 14 * 24 * 60 * 60 * 1000
+  );
 
-  await page.waitForTimeout(2000);
+  await page.aiAction(
+    `click the departure date that is ${
+      sevenDaysFromNow.getMonth() + 1
+    }/${sevenDaysFromNow.getDate()}`
+  );
+  await page.aiAction(
+    `click the departure date that is ${
+      fourteenDaysFromNow.getMonth() + 1
+    }/${fourteenDaysFromNow.getDate()}`
+  );
 
   await page.aiAction("click the search button");
 

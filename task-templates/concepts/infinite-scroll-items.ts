@@ -18,13 +18,14 @@ async function extractInfiniteScrollItems() {
   const agent = new HyperAgent({
     llm: {
       provider: "openai",
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
     },
+    debug: true,
   });
 
   const page = await agent.newPage();
 
-  await page.goto("https://apple.com");
+  await page.goto("https://infinite-scroll.com/demo/full-page");
 
   const scrollIterations = 3;
 
@@ -46,4 +47,3 @@ async function extractInfiniteScrollItems() {
 }
 
 extractInfiniteScrollItems();
-
