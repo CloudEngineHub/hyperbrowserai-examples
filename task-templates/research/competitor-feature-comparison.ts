@@ -107,4 +107,3 @@ compareTwoProducts(
   "https://www.sketch.com/features",
   "Sketch"
 );
-
