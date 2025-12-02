@@ -9,6 +9,12 @@ import { HyperAgent } from "@hyperbrowser/agent";
 import OpenAI from "openai";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -112,14 +118,30 @@ Please provide:
 async function tiktokShopRecommender(criteria: ShoppingCriteria) {
   const agent = new HyperAgent({
     llm: { provider: "openai", model: "gpt-4o" },
+    // default provider is openai
+    // browserProvider: "Hyperbrowser",
+    // uncomment to run with hyperbrowser provider
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`\n📱 Searching TikTok Shop for: "${criteria.category}"...\n`);
+
+  let sessionId: string | null = null;
 
   try {
     // Step 1: Extract trending products
     const products = await extractTikTokTrending(agent, criteria.category);
     console.log(`✅ Found ${products.length} trending products\n`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     // Log raw products
     console.log("📊 Raw product data:");
@@ -143,6 +165,12 @@ async function tiktokShopRecommender(criteria: ShoppingCriteria) {
     return { products, analysis };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "ai-pipelines", "shopping-recommender-tiktok");
+    // }
   }
 }
 
