@@ -7,6 +7,7 @@
 
 import "dotenv/config";
 import { HyperAgent } from "@hyperbrowser/agent";
+// if you want you can view the video recording if you run with hyperbrowser
 // import {
 //   videoSessionConfig,
 //   waitForVideoAndDownload,
@@ -44,7 +45,7 @@ async function scheduleCalendly(): Promise<string> {
     }
 
     // Get session ID after browser is initialized
-    sessionId = getSessionId(agent);
+    // sessionId = getSessionId(agent);
 
     // Navigate to Calendly
     await page.goto("https://calendly.com/shri-hyperbrowser/demo");
@@ -82,9 +83,10 @@ async function scheduleCalendly(): Promise<string> {
     }
 
     // Download video recording
-    if (sessionId) {
-      await waitForVideoAndDownload(sessionId, "booking", "calendly-schedule");
-    }
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "booking", "calendly-schedule");
+    // }
   }
 }
 

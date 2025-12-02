@@ -93,7 +93,6 @@ app.get("/api/wiki/infobox/:title", async (req: Request, res: Response) => {
         ...videoSessionConfig,
       },
     },
-    debug: true,
   });
 
   try {
