@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// uncomment to view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -82,7 +88,18 @@ function extractKeywords(description: string, title: string): string[] {
   const frequency: Record<string, number> = {};
 
   words.forEach((word) => {
-    if (!["this", "that", "with", "from", "have", "been", "were", "will"].includes(word)) {
+    if (
+      ![
+        "this",
+        "that",
+        "with",
+        "from",
+        "have",
+        "been",
+        "were",
+        "will",
+      ].includes(word)
+    ) {
       frequency[word] = (frequency[word] || 0) + 1;
     }
   });
@@ -95,19 +112,34 @@ function extractKeywords(description: string, title: string): string[] {
 
 async function extractYouTubeVideo(videoUrl: string): Promise<VideoAnalysis> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🎬 Extracting YouTube video data...\n`);
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     await page.goto(videoUrl);
     await page.waitForTimeout(4000);
 
     // Handle consent/cookie popup if present
-    await page.aiAction("accept cookies or close any popup if present");
+    await page.aiAction("click to pause the video");
     await page.waitForTimeout(1000);
 
     // Expand description
@@ -123,7 +155,7 @@ async function extractYouTubeVideo(videoUrl: string): Promise<VideoAnalysis> {
 
     // Scroll to comments
     await page.aiAction("scroll down to the comments section");
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(30000);
 
     // Extract comments
     console.log("  💬 Extracting comments...");
@@ -142,14 +174,37 @@ async function extractYouTubeVideo(videoUrl: string): Promise<VideoAnalysis> {
     // Calculate insights
     const views = parseNumber(metadata.views);
     const likes = parseNumber(metadata.likes || "0");
-    const engagementRatio = views > 0 ? ((likes / views) * 100).toFixed(2) : "0";
+    const engagementRatio =
+      views > 0 ? ((likes / views) * 100).toFixed(2) : "0";
 
     // Simple sentiment analysis based on comment keywords
-    const commentText = commentsData.comments.map((c) => c.content).join(" ").toLowerCase();
-    const positiveWords = ["love", "great", "amazing", "awesome", "best", "excellent", "perfect"];
-    const negativeWords = ["hate", "bad", "worst", "terrible", "awful", "disappointing"];
-    const positiveCount = positiveWords.filter((w) => commentText.includes(w)).length;
-    const negativeCount = negativeWords.filter((w) => commentText.includes(w)).length;
+    const commentText = commentsData.comments
+      .map((c) => c.content)
+      .join(" ")
+      .toLowerCase();
+    const positiveWords = [
+      "love",
+      "great",
+      "amazing",
+      "awesome",
+      "best",
+      "excellent",
+      "perfect",
+    ];
+    const negativeWords = [
+      "hate",
+      "bad",
+      "worst",
+      "terrible",
+      "awful",
+      "disappointing",
+    ];
+    const positiveCount = positiveWords.filter((w) =>
+      commentText.includes(w)
+    ).length;
+    const negativeCount = negativeWords.filter((w) =>
+      commentText.includes(w)
+    ).length;
     const commentSentiment =
       positiveCount > negativeCount
         ? "Positive"
@@ -172,7 +227,11 @@ async function extractYouTubeVideo(videoUrl: string): Promise<VideoAnalysis> {
 
     console.log(`\n🎬 VIDEO INFO`);
     console.log(`   Title: ${metadata.title}`);
-    console.log(`   Channel: ${metadata.channelName} (${metadata.channelSubscribers || "N/A"} subscribers)`);
+    console.log(
+      `   Channel: ${metadata.channelName} (${
+        metadata.channelSubscribers || "N/A"
+      } subscribers)`
+    );
     console.log(`   Duration: ${metadata.duration || "N/A"}`);
     console.log(`   Category: ${metadata.category || "N/A"}`);
     console.log(`   Upload Date: ${metadata.uploadDate}`);
@@ -193,20 +252,34 @@ async function extractYouTubeVideo(videoUrl: string): Promise<VideoAnalysis> {
       console.log(`   ${metadata.tags.slice(0, 10).join(", ")}`);
     }
 
-    console.log(`\n💬 TOP COMMENTS (${commentsData.comments.length} extracted)`);
+    console.log(
+      `\n💬 TOP COMMENTS (${commentsData.comments.length} extracted)`
+    );
     console.log(`   Sentiment: ${insights.commentSentiment}`);
     commentsData.comments.slice(0, 5).forEach((comment, i) => {
       const pinned = comment.isPinned ? " 📌" : "";
       const owner = comment.isChannelOwner ? " ✓" : "";
       console.log(`\n   ${i + 1}. @${comment.author}${owner}${pinned}`);
-      console.log(`      "${comment.content.substring(0, 80)}${comment.content.length > 80 ? "..." : ""}"`);
-      console.log(`      👍 ${comment.likes || 0} | ${comment.timestamp}${comment.replyCount ? ` | ${comment.replyCount} replies` : ""}`);
+      console.log(
+        `      "${comment.content.substring(0, 80)}${
+          comment.content.length > 80 ? "..." : ""
+        }"`
+      );
+      console.log(
+        `      👍 ${comment.likes || 0} | ${comment.timestamp}${
+          comment.replyCount ? ` | ${comment.replyCount} replies` : ""
+        }`
+      );
     });
 
     console.log(`\n📺 RELATED VIDEOS`);
     relatedData.videos.slice(0, 5).forEach((video, i) => {
       console.log(`   ${i + 1}. ${video.title}`);
-      console.log(`      ${video.channelName} | ${video.views} | ${video.duration || "N/A"}`);
+      console.log(
+        `      ${video.channelName} | ${video.views} | ${
+          video.duration || "N/A"
+        }`
+      );
     });
 
     console.log(`\n🔑 TOP KEYWORDS`);
@@ -220,11 +293,18 @@ async function extractYouTubeVideo(videoUrl: string): Promise<VideoAnalysis> {
     };
   } finally {
     await agent.closeAgent();
+
+    //  video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "social-media",
+    //     "youtube-video-metadata"
+    //   );
+    // }
   }
 }
 
 // Example usage
 extractYouTubeVideo("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-
-
-

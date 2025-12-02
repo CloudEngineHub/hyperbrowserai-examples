@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -82,12 +88,30 @@ async function searchListings(
 ): Promise<z.infer<typeof PropertyListingSchema>> {
   const agent = new HyperAgent({
     llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run wth hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🏠 Searching Zillow listings in: ${params.location}\n`);
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     await page.goto("https://www.zillow.com/");
     await page.waitForTimeout(3000);
 
@@ -167,6 +191,13 @@ async function searchListings(
     return result;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    // uncomment to download the video recording if you run with hyperbrowser
+    // await waitForVideoAndDownload(sessionId, "data-extraction", "zillow-listings-search");
+    // }
   }
 }
 
@@ -174,13 +205,30 @@ async function getPropertyDetails(
   propertyUrl: string
 ): Promise<z.infer<typeof PropertyDetailSchema>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🏠 Getting property details...\n`);
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     await page.goto(propertyUrl);
     await page.waitForTimeout(4000);
 
@@ -244,6 +292,16 @@ async function getPropertyDetails(
     return details;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //  await waitForVideoAndDownload(
+    //   sessionId,
+    //   "data-extraction",
+    //   "zillow-property-details"
+    // );
+    // }
   }
 }
 

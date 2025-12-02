@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -79,13 +85,29 @@ function formatChange(change: string): string {
 
 async function getCryptoPrice(coinId: string): Promise<CryptoData> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🪙 Getting crypto price for: ${coinId}\n`);
 
+  // let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     await page.goto(`https://www.coingecko.com/en/coins/${coinId}`);
     await page.waitForTimeout(3000);
 
@@ -115,25 +137,54 @@ async function getCryptoPrice(coinId: string): Promise<CryptoData> {
 
     if (quote.allTimeHigh || quote.allTimeLow) {
       console.log(`\n📈 PRICE HISTORY`);
-      if (quote.allTimeHigh) console.log(`   All-Time High: ${quote.allTimeHigh}`);
+      if (quote.allTimeHigh)
+        console.log(`   All-Time High: ${quote.allTimeHigh}`);
       if (quote.allTimeLow) console.log(`   All-Time Low: ${quote.allTimeLow}`);
     }
 
     return { quote, source: "CoinGecko" };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "finance",
+    //     "crypto-price-tracker"
+    //   );
+    // }
   }
 }
 
-async function getTopCryptos(limit: number = 20): Promise<z.infer<typeof TopCryptosSchema>> {
+async function getTopCryptos(
+  limit: number = 20
+): Promise<z.infer<typeof TopCryptosSchema>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🪙 Getting top ${limit} cryptocurrencies...\n`);
 
+  //  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     await page.goto("https://www.coingecko.com/");
     await page.waitForTimeout(3000);
 
@@ -154,15 +205,21 @@ async function getTopCryptos(limit: number = 20): Promise<z.infer<typeof TopCryp
     console.log("TOP CRYPTOCURRENCIES");
     console.log("=".repeat(70));
 
-    console.log("\n Rank | Name              | Price          | 24h       | Market Cap");
+    console.log(
+      "\n Rank | Name              | Price          | 24h       | Market Cap"
+    );
     console.log("-".repeat(70));
 
     result.cryptos.slice(0, limit).forEach((crypto) => {
       const rank = crypto.rank.padStart(4);
-      const name = `${crypto.name} (${crypto.symbol})`.padEnd(17).substring(0, 17);
+      const name = `${crypto.name} (${crypto.symbol})`
+        .padEnd(17)
+        .substring(0, 17);
       const price = crypto.price.padEnd(14);
       const change = crypto.change24h.padEnd(9);
-      console.log(`${rank} | ${name} | ${price} | ${change} | ${crypto.marketCap}`);
+      console.log(
+        `${rank} | ${name} | ${price} | ${change} | ${crypto.marketCap}`
+      );
     });
 
     // Summary
@@ -175,18 +232,40 @@ async function getTopCryptos(limit: number = 20): Promise<z.infer<typeof TopCryp
     return result;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "finance", "crypto-top-list");
+    // }
   }
 }
 
 async function getTrendingCryptos(): Promise<z.infer<typeof TrendingSchema>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🔥 Getting trending cryptocurrencies...\n`);
 
+  // let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     await page.goto("https://www.coingecko.com/");
     await page.waitForTimeout(3000);
 
@@ -210,35 +289,62 @@ async function getTrendingCryptos(): Promise<z.infer<typeof TrendingSchema>> {
     console.log("\n🔥 TRENDING");
     result.trending.slice(0, 10).forEach((crypto, i) => {
       const reason = crypto.reason ? ` (${crypto.reason})` : "";
-      console.log(`   ${i + 1}. ${crypto.name} (${crypto.symbol}): ${crypto.price} ${formatChange(crypto.change24h)}${reason}`);
+      console.log(
+        `   ${i + 1}. ${crypto.name} (${crypto.symbol}): ${
+          crypto.price
+        } ${formatChange(crypto.change24h)}${reason}`
+      );
     });
 
     if (result.topGainers.length > 0) {
       console.log("\n📈 TOP GAINERS");
       result.topGainers.slice(0, 5).forEach((crypto, i) => {
-        console.log(`   ${i + 1}. ${crypto.name} (${crypto.symbol}): ${crypto.change24h}`);
+        console.log(
+          `   ${i + 1}. ${crypto.name} (${crypto.symbol}): ${crypto.change24h}`
+        );
       });
     }
 
     if (result.topLosers.length > 0) {
       console.log("\n📉 TOP LOSERS");
       result.topLosers.slice(0, 5).forEach((crypto, i) => {
-        console.log(`   ${i + 1}. ${crypto.name} (${crypto.symbol}): ${crypto.change24h}`);
+        console.log(
+          `   ${i + 1}. ${crypto.name} (${crypto.symbol}): ${crypto.change24h}`
+        );
       });
     }
 
     return result;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "finance", "crypto-trending");
+    // }
   }
 }
 
-async function compareCryptos(coins: string[]): Promise<Map<string, z.infer<typeof CryptoQuoteSchema>>> {
+async function compareCryptos(
+  coins: string[]
+): Promise<Map<string, z.infer<typeof CryptoQuoteSchema>>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   const quotes = new Map<string, z.infer<typeof CryptoQuoteSchema>>();
+  // let sessionId: string | null = null;
 
   console.log(`🪙 Comparing ${coins.length} cryptocurrencies...\n`);
 
@@ -247,6 +353,12 @@ async function compareCryptos(coins: string[]): Promise<Map<string, z.infer<type
       console.log(`  Fetching ${coin}...`);
 
       const page = await agent.newPage();
+
+      // Get session ID after first page is initialized
+      // if (!sessionId) {
+      // sessionId = getSessionId(agent);
+      // }
+
       await page.goto(`https://www.coingecko.com/en/coins/${coin}`);
       await page.waitForTimeout(2500);
 
@@ -288,6 +400,12 @@ async function compareCryptos(coins: string[]): Promise<Map<string, z.infer<type
     return quotes;
   } finally {
     await agent.closeAgent();
+
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //  await waitForVideoAndDownload(sessionId, "finance", "crypto-compare");
+    // }
+    // }
   }
 }
 
@@ -302,6 +420,3 @@ getCryptoPrice("bitcoin");
 
 // Example: Compare multiple coins
 // compareCryptos(["bitcoin", "ethereum", "solana", "cardano"]);
-
-
-

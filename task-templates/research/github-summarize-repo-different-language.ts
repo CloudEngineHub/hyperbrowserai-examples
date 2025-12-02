@@ -1,6 +1,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// uncomment to view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -17,12 +23,27 @@ async function summarizeRepoWithDifferentLanguage(language: string) {
       provider: "openai",
       model: "gpt-4o",
     },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log("Starting GitHub Trending Repo summarization...");
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     // 1. Navigate to GitHub Trending
     console.log("Navigating to GitHub Trending...");
@@ -45,6 +66,11 @@ async function summarizeRepoWithDifferentLanguage(language: string) {
     console.error("An error occurred:", error);
   } finally {
     await agent.closeAgent();
+
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "research", "github-summarize-repo-different-language");
+    // }
   }
 }
 

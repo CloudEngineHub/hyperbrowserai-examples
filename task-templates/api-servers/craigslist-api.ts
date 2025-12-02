@@ -9,11 +9,12 @@ import express, { Request, Response } from "express";
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+import { videoSessionConfig } from "../utils/video-recording";
 
 config();
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3001;
 
 const ListingSchema = z.object({
   listings: z.array(
@@ -40,7 +41,7 @@ app.get("/api/craigslist/search", async (req: Request, res: Response) => {
   }
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
   });
 
   try {
@@ -75,7 +76,16 @@ app.get("/api/craigslist/housing", async (req: Request, res: Response) => {
   const maxPrice = req.query.max_price || "";
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    browserProvider: "Hyperbrowser",
+    hyperbrowserConfig: {
+      sessionConfig: {
+        useUltraStealth: true,
+        useProxy: true,
+        adblock: true,
+        ...videoSessionConfig,
+      },
+    },
   });
 
   try {
@@ -86,7 +96,7 @@ app.get("/api/craigslist/housing", async (req: Request, res: Response) => {
     if (maxPrice) params.append("max_price", maxPrice as string);
     if (params.toString()) url += `?${params.toString()}`;
 
-    await page.goto(url);
+    await page.goto(url, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(3000);
 
     const result = await page.extract(
@@ -111,7 +121,7 @@ app.get("/api/craigslist/jobs", async (req: Request, res: Response) => {
   const { city = "sfbay", query = "" } = req.query;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
   });
 
   try {
@@ -144,7 +154,7 @@ app.get("/api/craigslist/free", async (req: Request, res: Response) => {
   const { city = "sfbay" } = req.query;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
   });
 
   try {

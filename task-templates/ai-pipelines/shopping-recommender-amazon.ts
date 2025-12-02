@@ -9,6 +9,12 @@ import { HyperAgent } from "@hyperbrowser/agent";
 import OpenAI from "openai";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -44,6 +50,10 @@ async function extractAmazonProducts(
 
   await page.goto("https://www.amazon.com");
   await page.waitForTimeout(2000);
+
+  try {
+    await page.aiAction("click the continue shopping button");
+  } catch {}
 
   await page.aiAction(`type "${searchQuery}" in the search box`);
   await page.aiAction("click the search button");
@@ -100,9 +110,21 @@ Be specific about why each recommendation fits the user's needs.`;
 async function amazonShoppingRecommender(preferences: UserPreferences) {
   const agent = new HyperAgent({
     llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`\n🔍 Searching Amazon for: "${preferences.searchQuery}"...\n`);
+
+  let sessionId: string | null = null;
 
   try {
     // Step 1: Extract products from Amazon
@@ -112,6 +134,9 @@ async function amazonShoppingRecommender(preferences: UserPreferences) {
       15
     );
     console.log(`✅ Found ${products.length} products\n`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     // Step 2: Get AI recommendations
     console.log("🤖 Analyzing products with AI...\n");
@@ -126,6 +151,11 @@ async function amazonShoppingRecommender(preferences: UserPreferences) {
     return { products, recommendation };
   } finally {
     await agent.closeAgent();
+
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "ai-pipelines", "shopping-recommender-amazon");
+    // }
   }
 }
 

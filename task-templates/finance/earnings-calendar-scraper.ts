@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -60,15 +66,33 @@ interface EarningsCalendar {
 
 async function getEarningsCalendar(date?: string): Promise<EarningsCalendar> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   const targetDate = date || new Date().toISOString().split("T")[0];
   console.log(`📅 Getting earnings calendar for: ${targetDate}\n`);
 
+  // let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
-    await page.goto(`https://finance.yahoo.com/calendar/earnings?day=${targetDate}`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
+    await page.goto(
+      `https://finance.yahoo.com/calendar/earnings?day=${targetDate}`
+    );
     await page.waitForTimeout(3000);
 
     await page.aiAction("accept cookies if popup appears");
@@ -85,11 +109,15 @@ async function getEarningsCalendar(date?: string): Promise<EarningsCalendar> {
 
     // Calculate highlights
     const events = result.events;
-    const beforeMarket = events.filter((e) =>
-      e.reportTime.toLowerCase().includes("before") || e.reportTime.toLowerCase().includes("bmo")
+    const beforeMarket = events.filter(
+      (e) =>
+        e.reportTime.toLowerCase().includes("before") ||
+        e.reportTime.toLowerCase().includes("bmo")
     ).length;
-    const afterMarket = events.filter((e) =>
-      e.reportTime.toLowerCase().includes("after") || e.reportTime.toLowerCase().includes("amc")
+    const afterMarket = events.filter(
+      (e) =>
+        e.reportTime.toLowerCase().includes("after") ||
+        e.reportTime.toLowerCase().includes("amc")
     ).length;
 
     const highlights = {
@@ -111,47 +139,89 @@ async function getEarningsCalendar(date?: string): Promise<EarningsCalendar> {
     console.log(`   Time TBD: ${highlights.notSpecified}`);
 
     // Before market
-    const bmo = events.filter((e) =>
-      e.reportTime.toLowerCase().includes("before") || e.reportTime.toLowerCase().includes("bmo")
+    const bmo = events.filter(
+      (e) =>
+        e.reportTime.toLowerCase().includes("before") ||
+        e.reportTime.toLowerCase().includes("bmo")
     );
     if (bmo.length > 0) {
       console.log(`\n🌅 BEFORE MARKET OPEN`);
       bmo.slice(0, 10).forEach((event) => {
         const eps = event.epsEstimate ? `EPS Est: ${event.epsEstimate}` : "";
-        const rev = event.revenueEstimate ? `Rev Est: ${event.revenueEstimate}` : "";
-        console.log(`   ${event.symbol.padEnd(6)} ${event.companyName.substring(0, 30).padEnd(30)} | ${eps} ${rev}`);
+        const rev = event.revenueEstimate
+          ? `Rev Est: ${event.revenueEstimate}`
+          : "";
+        console.log(
+          `   ${event.symbol.padEnd(6)} ${event.companyName
+            .substring(0, 30)
+            .padEnd(30)} | ${eps} ${rev}`
+        );
       });
     }
 
     // After market
-    const amc = events.filter((e) =>
-      e.reportTime.toLowerCase().includes("after") || e.reportTime.toLowerCase().includes("amc")
+    const amc = events.filter(
+      (e) =>
+        e.reportTime.toLowerCase().includes("after") ||
+        e.reportTime.toLowerCase().includes("amc")
     );
     if (amc.length > 0) {
       console.log(`\n🌙 AFTER MARKET CLOSE`);
       amc.slice(0, 10).forEach((event) => {
         const eps = event.epsEstimate ? `EPS Est: ${event.epsEstimate}` : "";
-        const rev = event.revenueEstimate ? `Rev Est: ${event.revenueEstimate}` : "";
-        console.log(`   ${event.symbol.padEnd(6)} ${event.companyName.substring(0, 30).padEnd(30)} | ${eps} ${rev}`);
+        const rev = event.revenueEstimate
+          ? `Rev Est: ${event.revenueEstimate}`
+          : "";
+        console.log(
+          `   ${event.symbol.padEnd(6)} ${event.companyName
+            .substring(0, 30)
+            .padEnd(30)} | ${eps} ${rev}`
+        );
       });
     }
 
     return { date: targetDate, events, highlights };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "finance", "earnings-calendar");
+    // }
   }
 }
 
-async function getEarningsDetails(symbol: string): Promise<z.infer<typeof EarningsDetailsSchema>> {
+async function getEarningsDetails(
+  symbol: string
+): Promise<z.infer<typeof EarningsDetailsSchema>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`📊 Getting earnings details for: ${symbol.toUpperCase()}\n`);
 
+  // let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
-    await page.goto(`https://finance.yahoo.com/quote/${symbol.toUpperCase()}/analysis`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
+    await page.goto(
+      `https://finance.yahoo.com/quote/${symbol.toUpperCase()}/analysis`
+    );
     await page.waitForTimeout(3000);
 
     await page.aiAction("accept cookies if popup appears");
@@ -168,7 +238,9 @@ async function getEarningsDetails(symbol: string): Promise<z.infer<typeof Earnin
 
     // Display results
     console.log("=".repeat(60));
-    console.log(`EARNINGS DETAILS - ${details.companyName} (${details.symbol})`);
+    console.log(
+      `EARNINGS DETAILS - ${details.companyName} (${details.symbol})`
+    );
     console.log("=".repeat(60));
 
     console.log(`\n📅 UPCOMING EARNINGS`);
@@ -189,34 +261,59 @@ async function getEarningsDetails(symbol: string): Promise<z.infer<typeof Earnin
 
     if (details.history.length > 0) {
       console.log(`\n📊 EARNINGS HISTORY`);
-      console.log("   Quarter     | Date       | Est      | Actual   | Surprise");
+      console.log(
+        "   Quarter     | Date       | Est      | Actual   | Surprise"
+      );
       console.log("   " + "-".repeat(55));
       details.history.forEach((q) => {
         const quarter = q.quarter.padEnd(11);
         const date = q.reportDate.padEnd(10);
         const est = q.epsEstimate.padEnd(8);
         const actual = q.epsActual.padEnd(8);
-        console.log(`   ${quarter} | ${date} | ${est} | ${actual} | ${q.surprise}`);
+        console.log(
+          `   ${quarter} | ${date} | ${est} | ${actual} | ${q.surprise}`
+        );
       });
 
       // Calculate beat/miss ratio
-      const beats = details.history.filter((q) => !q.surprise.includes("-")).length;
-      console.log(`\n   📈 Beat Rate: ${beats}/${details.history.length} quarters`);
+      const beats = details.history.filter(
+        (q) => !q.surprise.includes("-")
+      ).length;
+      console.log(
+        `\n   📈 Beat Rate: ${beats}/${details.history.length} quarters`
+      );
     }
 
     return details;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    //    if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "finance", "earnings-details");
+    // }
   }
 }
 
 async function getWeeklyEarnings(): Promise<Map<string, EarningsCalendar>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   const weeklyData = new Map<string, EarningsCalendar>();
   const today = new Date();
+  // let sessionId: string | null = null;
 
   console.log(`📅 Getting earnings for the week...\n`);
 
@@ -230,7 +327,15 @@ async function getWeeklyEarnings(): Promise<Map<string, EarningsCalendar>> {
       console.log(`  📆 Fetching ${dayName} (${dateStr})...`);
 
       const page = await agent.newPage();
-      await page.goto(`https://finance.yahoo.com/calendar/earnings?day=${dateStr}`);
+
+      // Get session ID after first page is initialized
+      // if (!sessionId) {
+      //   sessionId = getSessionId(agent);
+      // }
+
+      await page.goto(
+        `https://finance.yahoo.com/calendar/earnings?day=${dateStr}`
+      );
       await page.waitForTimeout(2500);
 
       try {
@@ -271,18 +376,28 @@ async function getWeeklyEarnings(): Promise<Map<string, EarningsCalendar>> {
     console.log("=".repeat(60));
 
     weeklyData.forEach((data, date) => {
-      const dayName = new Date(date).toLocaleDateString("en-US", { weekday: "long" });
+      const dayName = new Date(date).toLocaleDateString("en-US", {
+        weekday: "long",
+      });
       console.log(`\n📆 ${dayName} (${date}): ${data.events.length} reports`);
 
       const topStocks = data.events.slice(0, 5);
       topStocks.forEach((event) => {
-        console.log(`   • ${event.symbol} - ${event.companyName.substring(0, 25)}...`);
+        console.log(
+          `   • ${event.symbol} - ${event.companyName.substring(0, 25)}...`
+        );
       });
     });
 
     return weeklyData;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "finance", "earnings-weekly");
+    // }
   }
 }
 
@@ -297,6 +412,3 @@ getEarningsCalendar();
 
 // Example: Get weekly earnings calendar
 // getWeeklyEarnings();
-
-
-

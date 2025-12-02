@@ -2,6 +2,13 @@ import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
 
+// uncomment to view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
+
 config();
 
 const AppSchema = z.object({
@@ -21,12 +28,27 @@ async function extractBestNewApps() {
       provider: "openai",
       model: "gpt-4o",
     },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log("Starting Apple App Store extraction...");
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     // 1. Navigate to Apple App Store (iPhone apps)
     console.log("Navigating to Apple App Store...");
@@ -59,6 +81,12 @@ async function extractBestNewApps() {
     console.error("An error occurred:", error);
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    // await waitForVideoAndDownload(sessionId, "research", "apple-best-new-apps");
+    // }
   }
 }
 

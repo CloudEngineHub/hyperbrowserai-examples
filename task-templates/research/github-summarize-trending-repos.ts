@@ -1,6 +1,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// uncomment to view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -17,22 +23,37 @@ async function summarizeFirstTrendingRepo() {
       provider: "openai",
       model: "gpt-4o",
     },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log("Starting GitHub Trending Repo summarization...");
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
-    
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     // 1. Navigate to GitHub Trending
     console.log("Navigating to GitHub Trending...");
     await page.goto("https://github.com/trending");
-    
+
     // 2. Click the first repository
     console.log("Clicking the first trending repository...");
     // We specify "first repository name" to avoid clicking other links like language filters
     await page.aiAction("click the first repository name link in the list");
-    
+
     // 3. Wait for the repository page to load
     await page.waitForTimeout(3000);
 
@@ -49,11 +70,15 @@ async function summarizeFirstTrendingRepo() {
     console.log(`\nSummary:\n${result.summary}`);
     console.log("\nKey Features:");
     result.keyFeatures.forEach((feature) => console.log(`- ${feature}`));
-
   } catch (error) {
     console.error("An error occurred:", error);
   } finally {
     await agent.closeAgent();
+
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "research", "github-summarize-trending-repos");
+    // }
   }
 }
 

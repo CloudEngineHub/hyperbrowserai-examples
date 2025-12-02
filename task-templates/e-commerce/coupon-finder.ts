@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -69,18 +75,37 @@ async function findCouponsForStore(
   storeName: string
 ): Promise<{ coupons: AggregatedCoupon[]; bestDeal: AggregatedCoupon | null }> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🎟️ Finding coupons for: ${storeName}\n`);
 
   const allCoupons: AggregatedCoupon[] = [];
+  let sessionId: string | null = null;
 
   try {
     // Search RetailMeNot
     console.log("  📡 Searching RetailMeNot...");
     const page1 = await agent.newPage();
-    await page1.goto(`https://www.retailmenot.com/view/${storeName.toLowerCase().replace(/\s+/g, "")}.com`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
+    await page1.goto(
+      `https://www.retailmenot.com/view/${storeName
+        .toLowerCase()
+        .replace(/\s+/g, "")}.com`
+    );
     await page1.waitForTimeout(3000);
 
     try {
@@ -103,7 +128,11 @@ async function findCouponsForStore(
     // Search Coupons.com
     console.log("  📡 Searching Coupons.com...");
     const page2 = await agent.newPage();
-    await page2.goto(`https://www.coupons.com/coupon-codes/${storeName.toLowerCase().replace(/\s+/g, "-")}`);
+    await page2.goto(
+      `https://www.coupons.com/coupon-codes/${storeName
+        .toLowerCase()
+        .replace(/\s+/g, "-")}`
+    );
     await page2.waitForTimeout(3000);
 
     try {
@@ -130,7 +159,8 @@ async function findCouponsForStore(
 
     // Find best deal
     const verifiedCoupons = sortedCoupons.filter((c) => c.verified && c.code);
-    const bestDeal = verifiedCoupons.length > 0 ? verifiedCoupons[0] : sortedCoupons[0];
+    const bestDeal =
+      verifiedCoupons.length > 0 ? verifiedCoupons[0] : sortedCoupons[0];
 
     // Display results
     console.log("\n" + "=".repeat(60));
@@ -140,13 +170,19 @@ async function findCouponsForStore(
     console.log(`\n📊 SUMMARY`);
     console.log(`   Total coupons found: ${allCoupons.length}`);
     console.log(`   Verified codes: ${verifiedCoupons.length}`);
-    console.log(`   Deals (no code): ${allCoupons.filter((c) => !c.code).length}`);
+    console.log(
+      `   Deals (no code): ${allCoupons.filter((c) => !c.code).length}`
+    );
 
     if (bestDeal) {
       console.log(`\n🏆 BEST DEAL`);
       console.log(`   ${bestDeal.discount} - ${bestDeal.description}`);
       if (bestDeal.code) console.log(`   Code: ${bestDeal.code}`);
-      console.log(`   Source: ${bestDeal.source} | Verified: ${bestDeal.verified ? "Yes ✓" : "No"}`);
+      console.log(
+        `   Source: ${bestDeal.source} | Verified: ${
+          bestDeal.verified ? "Yes ✓" : "No"
+        }`
+      );
     }
 
     // Codes
@@ -155,11 +191,16 @@ async function findCouponsForStore(
       console.log(`\n🔤 COUPON CODES`);
       codes.slice(0, 10).forEach((coupon, i) => {
         const verified = coupon.verified ? "✓" : "";
-        const expires = coupon.expirationDate ? ` (exp: ${coupon.expirationDate})` : "";
+        const expires = coupon.expirationDate
+          ? ` (exp: ${coupon.expirationDate})`
+          : "";
         console.log(`\n   ${i + 1}. ${coupon.code} ${verified}`);
-        console.log(`      ${coupon.discount} - ${coupon.description.substring(0, 50)}...`);
+        console.log(
+          `      ${coupon.discount} - ${coupon.description.substring(0, 50)}...`
+        );
         console.log(`      Source: ${coupon.source}${expires}`);
-        if (coupon.successRate) console.log(`      Success rate: ${coupon.successRate}`);
+        if (coupon.successRate)
+          console.log(`      Success rate: ${coupon.successRate}`);
       });
     }
 
@@ -168,13 +209,23 @@ async function findCouponsForStore(
     if (deals.length > 0) {
       console.log(`\n🏷️ DEALS (no code needed)`);
       deals.slice(0, 5).forEach((deal, i) => {
-        console.log(`   ${i + 1}. ${deal.discount} - ${deal.description.substring(0, 60)}...`);
+        console.log(
+          `   ${i + 1}. ${deal.discount} - ${deal.description.substring(
+            0,
+            60
+          )}...`
+        );
       });
     }
 
     return { coupons: sortedCoupons, bestDeal };
   } finally {
     await agent.closeAgent();
+
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "e-commerce", "coupon-finder");
+    // }
   }
 }
 

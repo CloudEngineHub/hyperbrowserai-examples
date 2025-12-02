@@ -10,6 +10,13 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { config } from "dotenv";
 
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
+
 config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -139,11 +146,24 @@ async function newsSentimentAggregator(customSources?: NewsSource[]) {
   const sources = customSources || NEWS_SOURCES;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log("📰 News Sentiment Aggregator\n");
   console.log(`Fetching headlines from ${sources.length} sources...\n`);
+
+  let sessionId: string | null = null;
 
   try {
     // Step 1: Extract headlines from all sources
@@ -155,6 +175,9 @@ async function newsSentimentAggregator(customSources?: NewsSource[]) {
       allHeadlines.push(...headlines);
       console.log(`     Found ${headlines.length} headlines`);
     }
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     console.log(`\n✅ Total headlines collected: ${allHeadlines.length}\n`);
 
@@ -190,6 +213,15 @@ async function newsSentimentAggregator(customSources?: NewsSource[]) {
     };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "ai-pipelines",
+    //     "news-sentiment-aggregator"
+    //   );
+    // }
   }
 }
 

@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -91,23 +97,21 @@ async function searchHotelsCom(
     await page.goto("https://www.hotels.com/");
     await page.waitForTimeout(3000);
 
-    // Close any popups
-    await page.aiAction("close any popup or modal if present");
-    await page.waitForTimeout(1000);
-
     // Enter destination
+
+    await page.aiAction("Click the where to? field");
     await page.aiAction(
       `type "${params.destination}" in the destination field`
     );
     await page.waitForTimeout(1500);
-    await page.aiAction("select the first destination suggestion");
+    await page.aiAction("click the first destination suggestion");
     await page.waitForTimeout(1000);
 
     // Set dates
     await page.aiAction("click on the dates field");
     await page.waitForTimeout(1000);
-    await page.aiAction(`select check-in date ${params.checkIn}`);
-    await page.aiAction(`select check-out date ${params.checkOut}`);
+    await page.aiAction(`click check-in date ${params.checkIn}`);
+    await page.aiAction(`click check-out date ${params.checkOut}`);
     await page.aiAction("apply the selected dates");
     await page.waitForTimeout(1000);
 
@@ -147,28 +151,23 @@ async function searchBookingCom(
     // Close any popups
     await page.waitForTimeout(1000);
 
+    await page.aiAction(
+      " click the x button to clear the where are you going? field."
+    );
+
     // Enter destination
     await page.aiAction(
-      `type "${params.destination}" in the destination/property field`
+      `type "${params.destination}" in the where are you going? field`
     );
     await page.waitForTimeout(1500);
     await page.aiAction("select the first destination suggestion");
     await page.waitForTimeout(1000);
 
     // Set dates
-    await page.aiAction("click on the check-in date field");
+    await page.aiAction("click on the searchbox datess");
     await page.waitForTimeout(1000);
-    await page.aiAction(`click check-in date ${params.checkIn}`);
-    await page.aiAction(`click check-out date ${params.checkOut}`);
-    await page.waitForTimeout(1000);
-
-    // Set guests/rooms
-    await page.aiAction("click on the guests/rooms field");
-    await page.waitForTimeout(500);
-    await page.aiAction(
-      `set ${params.guests} adults and ${params.rooms} room(s)`
-    );
-    await page.aiAction("close the guests selector");
+    await page.aiAction(`click the ${params.checkIn} date`);
+    await page.aiAction(`click the ${params.checkOut} date`);
     await page.waitForTimeout(1000);
 
     // Search
@@ -191,18 +190,38 @@ async function searchBookingCom(
 
 async function compareHotels(params: SearchParams): Promise<ComparisonResult> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    localConfig: {
+      args: ["--window-size=1920,1080"],
+    },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     solveCaptchas: true,
+    //     enableWindowManager: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🏨 Comparing hotels in: ${params.destination}`);
   console.log(`   Check-in: ${params.checkIn} | Check-out: ${params.checkOut}`);
   console.log(`   Guests: ${params.guests} | Rooms: ${params.rooms}\n`);
 
+  let sessionId: string | null = null;
+
   try {
     // Search both sites
     console.log("  🔍 Searching Hotels.com...");
     const hotelsComResults = await searchHotelsCom(agent, params);
     console.log(`     Found ${hotelsComResults.length} hotels`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     console.log("  🔍 Searching Booking.com...");
     const bookingComResults = await searchBookingCom(agent, params);
@@ -295,6 +314,12 @@ async function compareHotels(params: SearchParams): Promise<ComparisonResult> {
     };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    //  if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "booking", "hotel-comparison");
+    // }
   }
 }
 

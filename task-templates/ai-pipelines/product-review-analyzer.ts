@@ -10,6 +10,13 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { config } from "dotenv";
 
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
+
 config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -20,10 +27,6 @@ const ReviewsSchema = z.object({
       rating: z.string(),
       title: z.string(),
       content: z.string(),
-      author: z.string().nullable(),
-      date: z.string().nullable(),
-      verified: z.boolean().nullable(),
-      helpful: z.string().nullable(),
     })
   ),
 });
@@ -56,6 +59,10 @@ async function extractReviewsFromSource(
     await page.goto(source.url);
     await page.waitForTimeout(3000);
 
+    try {
+      await page.aiAction("click the continue shopping button");
+    } catch {}
+
     // Get product info
     const productInfo = await page.extract(
       "Extract product name, overall rating, total review count, and rating breakdown (5-star to 1-star percentages)",
@@ -63,16 +70,12 @@ async function extractReviewsFromSource(
     );
 
     // Navigate to reviews section
-    await page.aiAction("scroll to customer reviews section");
-    await page.waitForTimeout(2000);
-
-    // Sort by most helpful if available
-    await page.aiAction("sort reviews by most helpful if option exists");
+    await page.aiAction("scroll to 50%");
     await page.waitForTimeout(2000);
 
     // Extract reviews
     const reviews = await page.extract(
-      "Extract up to 20 customer reviews with rating, title, full content, author name, date, verified purchase status, and helpful votes count",
+      "Extract up to 20 customer reviews with rating, title, full content",
       ReviewsSchema
     );
 
@@ -186,11 +189,25 @@ Bottom Line: [one sentence]`;
 
 async function productReviewAnalyzer(sources: ReviewSource[]) {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     solveCaptchas: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log("🔍 Product Review Analyzer\n");
   console.log(`Analyzing reviews from ${sources.length} sources...\n`);
+
+  let sessionId: string | null = null;
 
   try {
     // Step 1: Extract reviews from all sources
@@ -204,6 +221,9 @@ async function productReviewAnalyzer(sources: ReviewSource[]) {
         console.log(`     Found ${data.reviews.length} reviews`);
       }
     }
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     if (reviewData.length === 0) {
       throw new Error("No reviews could be extracted");
@@ -238,6 +258,12 @@ async function productReviewAnalyzer(sources: ReviewSource[]) {
     };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "ai-pipelines", "product-review-analyzer");
+    // }
   }
 }
 
