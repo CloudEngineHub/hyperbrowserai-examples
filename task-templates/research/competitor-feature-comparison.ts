@@ -2,6 +2,13 @@ import { HyperAgent } from "@hyperbrowser/agent";
 import { config } from "dotenv";
 import { z } from "zod";
 
+// uncomment to view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
+
 config();
 
 const FeaturesSchema = z.object({
@@ -87,18 +94,46 @@ async function compareTwoProducts(
   const agent = new HyperAgent({
     llm: {
       provider: "openai",
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
     },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`\nComparing ${name1} vs ${name2}...\n`);
 
-  const product1 = await extractCompetitorFeatures(agent, url1, name1);
-  const product2 = await extractCompetitorFeatures(agent, url2, name2);
+  let sessionId: string | null = null;
 
-  compareFeatures(product1, product2);
+  try {
+    const product1 = await extractCompetitorFeatures(agent, url1, name1);
 
-  await agent.closeAgent();
+    // Get session ID after first page is initialized
+    // sessionId = getSessionId(agent);
+
+    const product2 = await extractCompetitorFeatures(agent, url2, name2);
+
+    compareFeatures(product1, product2);
+  } finally {
+    await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "research",
+    //     "competitor-feature-comparison"
+    //   );
+    // }
+  }
 }
 
 compareTwoProducts(
