@@ -7,9 +7,16 @@
 
 import "dotenv/config";
 import { HyperAgent } from "@hyperbrowser/agent";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 async function scheduleOpenTable(): Promise<string> {
   let agent: HyperAgent | null = null;
+  let sessionId: string | null = null;
 
   try {
     // Initialize HyperAgent
@@ -19,6 +26,16 @@ async function scheduleOpenTable(): Promise<string> {
         provider: "anthropic",
         model: "claude-sonnet-4-0",
       },
+      // uncomment to run with hyperbrowser provider
+      // browserProvider: "Hyperbrowser",
+      // hyperbrowserConfig: {
+      //   sessionConfig: {
+      //     useUltraStealth: true,
+      //     useProxy: true,
+      //     adblock: true,
+      //     ...videoSessionConfig,
+      //   },
+      // },
     });
 
     // Get the page instance
@@ -26,6 +43,9 @@ async function scheduleOpenTable(): Promise<string> {
     if (!page) {
       throw new Error("Failed to get page instance from HyperAgent");
     }
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     // Navigate to Calendly
     await page.goto(
@@ -51,7 +71,7 @@ async function scheduleOpenTable(): Promise<string> {
     );
 
     await page.aiAction(
-      "check 'I agree to the restaurant’s terms and conditions'"
+      "check 'I agree to the restaurant's terms and conditions'"
     );
 
     await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -72,6 +92,11 @@ async function scheduleOpenTable(): Promise<string> {
         console.error("Error closing HyperAgent:", err);
       }
     }
+
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "booking", "opentable-reserve");
+    // }
   }
 }
 

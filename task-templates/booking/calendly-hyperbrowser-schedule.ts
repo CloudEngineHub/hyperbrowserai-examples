@@ -7,9 +7,15 @@
 
 import "dotenv/config";
 import { HyperAgent } from "@hyperbrowser/agent";
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 async function scheduleCalendly(): Promise<string> {
   let agent: HyperAgent | null = null;
+  let sessionId: string | null = null;
 
   try {
     // Initialize HyperAgent
@@ -19,6 +25,16 @@ async function scheduleCalendly(): Promise<string> {
         provider: "anthropic",
         model: "claude-sonnet-4-0",
       },
+      // uncomment to run with hyperbrowser provider
+      //   browserProvider: "Hyperbrowser",
+      //   hyperbrowserConfig: {
+      //     sessionConfig: {
+      //       useUltraStealth: true,
+      //       useProxy: true,
+      //       adblock: true,
+      //       ...videoSessionConfig,
+      //     },
+      //   },
     });
 
     // Get the page instance
@@ -26,6 +42,9 @@ async function scheduleCalendly(): Promise<string> {
     if (!page) {
       throw new Error("Failed to get page instance from HyperAgent");
     }
+
+    // Get session ID after browser is initialized
+    sessionId = getSessionId(agent);
 
     // Navigate to Calendly
     await page.goto("https://calendly.com/shri-hyperbrowser/demo");
@@ -60,6 +79,11 @@ async function scheduleCalendly(): Promise<string> {
       } catch (err) {
         console.error("Error closing HyperAgent:", err);
       }
+    }
+
+    // Download video recording
+    if (sessionId) {
+      await waitForVideoAndDownload(sessionId, "booking", "calendly-schedule");
     }
   }
 }
