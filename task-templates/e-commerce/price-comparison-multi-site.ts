@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -61,7 +67,10 @@ async function searchAmazon(
     await page.goto("https://www.amazon.com");
     await page.waitForTimeout(2000);
 
-    await page.aiAction(`type "${query}" in the search box and press Enter`);
+    await page.aiAction("Click the continue shopping button");
+
+    await page.aiAction(`type "${query}" in the search box`);
+    await page.aiAction("Click the search button");
     await page.waitForTimeout(3000);
 
     const result = await page.extract(
@@ -87,7 +96,8 @@ async function searchWalmart(
     await page.goto("https://www.walmart.com");
     await page.waitForTimeout(2000);
 
-    await page.aiAction(`type "${query}" in the search box and press Enter`);
+    await page.aiAction(`type "${query}" in the search box`);
+    await page.aiAction("Click the search button");
     await page.waitForTimeout(3000);
 
     const result = await page.extract(
@@ -113,7 +123,8 @@ async function searchTarget(
     await page.goto("https://www.target.com");
     await page.waitForTimeout(2000);
 
-    await page.aiAction(`type "${query}" in the search box and press Enter`);
+    await page.aiAction(`type "${query}" in the search box`);
+    await page.aiAction("Click the search button");
     await page.waitForTimeout(3000);
 
     const result = await page.extract(
@@ -132,15 +143,30 @@ async function searchTarget(
 
 async function comparePrices(searchQuery: string): Promise<ComparisonResult> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🔍 Comparing prices for: "${searchQuery}"\n`);
+
+  let sessionId: string | null = null;
 
   try {
     // Search all stores
     console.log("  📦 Searching Amazon...");
     const amazonResult = await searchAmazon(agent, searchQuery);
+
+    // Get session ID after first page is initialized
+    // sessionId = getSessionId(agent);
 
     console.log("  📦 Searching Walmart...");
     const walmartResult = await searchWalmart(agent, searchQuery);
@@ -152,7 +178,8 @@ async function comparePrices(searchQuery: string): Promise<ComparisonResult> {
 
     // Find best deal
     const validResults = results.filter((r) => r.product && r.product.inStock);
-    let bestDeal = null;
+    let bestDeal: { store: string; price: number; savings: string } | null =
+      null;
 
     if (validResults.length > 0) {
       const prices = validResults.map((r) => ({
@@ -169,7 +196,10 @@ async function comparePrices(searchQuery: string): Promise<ComparisonResult> {
         bestDeal = {
           store: winner.store,
           price: winner.price,
-          savings: savings > 0 ? `$${savings.toFixed(2)} less than highest` : "Best available price",
+          savings:
+            savings > 0
+              ? `$${savings.toFixed(2)} less than highest`
+              : "Best available price",
         };
       }
     }
@@ -179,7 +209,9 @@ async function comparePrices(searchQuery: string): Promise<ComparisonResult> {
     const inStockStores = validResults.length;
     let summary = `Found at ${availableStores}/3 stores. ${inStockStores} in stock.`;
     if (bestDeal) {
-      summary += ` Best price: $${bestDeal.price.toFixed(2)} at ${bestDeal.store}.`;
+      summary += ` Best price: $${bestDeal.price.toFixed(2)} at ${
+        bestDeal.store
+      }.`;
     }
 
     const comparison: ComparisonResult = {
@@ -211,7 +243,11 @@ async function comparePrices(searchQuery: string): Promise<ComparisonResult> {
         if (result.product.originalPrice) {
           console.log(`   Was: ${result.product.originalPrice}`);
         }
-        console.log(`   Rating: ${result.product.rating || "N/A"} (${result.product.reviewCount || "0"} reviews)`);
+        console.log(
+          `   Rating: ${result.product.rating || "N/A"} (${
+            result.product.reviewCount || "0"
+          } reviews)`
+        );
         console.log(`   In Stock: ${result.product.inStock ? "Yes" : "No"}`);
         console.log(`   Shipping: ${result.product.shipping || "Check site"}`);
       } else {
@@ -234,9 +270,17 @@ async function comparePrices(searchQuery: string): Promise<ComparisonResult> {
     return comparison;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "e-commerce",
+    //     "price-comparison-multi-site"
+    //   );
+    // }
   }
 }
 
 // Example usage
 comparePrices("Sony WH-1000XM5 headphones");
-

@@ -9,6 +9,12 @@ import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
 import * as fs from "fs";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -114,16 +120,33 @@ async function searchAuctions(
   options: { minPrice?: number; maxPrice?: number; endingSoon?: boolean } = {}
 ): Promise<z.infer<typeof AuctionSchema>["auctions"]> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🔨 Searching eBay auctions for: "${query}"\n`);
 
+  // let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
 
+    // Get session ID after browser is initialized
+    // // sessionId = getSessionId(agent);
+
     // Build URL with filters
-    let url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Auction=1`;
+    let url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(
+      query
+    )}&LH_Auction=1`;
     if (options.minPrice) url += `&_udlo=${options.minPrice}`;
     if (options.maxPrice) url += `&_udhi=${options.maxPrice}`;
     if (options.endingSoon) url += `&_sop=1`; // Sort by ending soonest
@@ -147,12 +170,16 @@ async function searchAuctions(
       const urgencyIcon = timeLeft < 60 ? "🔥" : timeLeft < 360 ? "⏰" : "📅";
 
       console.log(`\n${i + 1}. ${auction.title.substring(0, 60)}...`);
-      console.log(`   💰 Current: ${auction.currentBid} (${auction.bidCount} bids)`);
+      console.log(
+        `   💰 Current: ${auction.currentBid} (${auction.bidCount} bids)`
+      );
       if (auction.buyItNowPrice) {
         console.log(`   🛒 Buy It Now: ${auction.buyItNowPrice}`);
       }
       console.log(`   ${urgencyIcon} Time Left: ${auction.timeRemaining}`);
-      console.log(`   👤 Seller: ${auction.seller} (${auction.sellerRating || "N/A"})`);
+      console.log(
+        `   👤 Seller: ${auction.seller} (${auction.sellerRating || "N/A"})`
+      );
       console.log(`   📦 Shipping: ${auction.shipping || "See listing"}`);
       if (auction.watchers) {
         console.log(`   👀 Watchers: ${auction.watchers}`);
@@ -162,23 +189,53 @@ async function searchAuctions(
     return result.auctions;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // if (sessionId) {
+    // uncomment to download the video recording if you run with hyperbrowser
+    // await waitForVideoAndDownload(
+    //   sessionId,
+    //   "e-commerce",
+    //   "ebay-auction-search"
+    // );
+    // }
   }
 }
 
-async function getAuctionDetails(auctionUrl: string): Promise<z.infer<typeof AuctionDetailSchema>> {
+async function getAuctionDetails(
+  auctionUrl: string
+): Promise<z.infer<typeof AuctionDetailSchema>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    //  browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`📋 Getting auction details...\n`);
 
+  // let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // // sessionId = getSessionId(agent);
+
     await page.goto(auctionUrl);
     await page.waitForTimeout(3000);
 
     // Try to view bid history
-    await page.aiAction("click on bid history or number of bids link if available");
+    await page.aiAction(
+      "click on bid history or number of bids link if available"
+    );
     await page.waitForTimeout(2000);
 
     const details = await page.extract(
@@ -194,8 +251,10 @@ async function getAuctionDetails(auctionUrl: string): Promise<z.infer<typeof Auc
     console.log(`\n📦 ${details.title}`);
     console.log(`\n💰 PRICING`);
     console.log(`   Current Bid: ${details.currentBid}`);
-    if (details.startingBid) console.log(`   Starting Bid: ${details.startingBid}`);
-    if (details.buyItNowPrice) console.log(`   Buy It Now: ${details.buyItNowPrice}`);
+    if (details.startingBid)
+      console.log(`   Starting Bid: ${details.startingBid}`);
+    if (details.buyItNowPrice)
+      console.log(`   Buy It Now: ${details.buyItNowPrice}`);
     console.log(`   Bids: ${details.bidCount}`);
     console.log(`   Time Left: ${details.timeRemaining}`);
 
@@ -222,6 +281,16 @@ async function getAuctionDetails(auctionUrl: string): Promise<z.infer<typeof Auc
     return details;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // if (sessionId) {
+    // uncomment to download the video recording if you run with hyperbrowser
+    // await waitForVideoAndDownload(
+    //   sessionId,
+    //   "e-commerce",
+    //   "ebay-auction-details"
+    // );
+    // }
   }
 }
 
@@ -233,10 +302,21 @@ async function checkTrackedAuctions(): Promise<AuctionAlert[]> {
   }
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   const alerts: AuctionAlert[] = [];
+  // let sessionId: string | null = null;
 
   console.log(`📋 Checking ${auctions.length} tracked auctions...\n`);
 
@@ -245,6 +325,12 @@ async function checkTrackedAuctions(): Promise<AuctionAlert[]> {
       console.log(`  Checking: ${auction.title.substring(0, 40)}...`);
 
       const page = await agent.newPage();
+
+      // Get session ID after first page is initialized
+      // if (!sessionId) {
+      // sessionId = getSessionId(agent);
+      // }
+
       await page.goto(auction.url);
       await page.waitForTimeout(2000);
 
@@ -261,9 +347,10 @@ async function checkTrackedAuctions(): Promise<AuctionAlert[]> {
       );
 
       const currentBid = parsePrice(status.currentBid);
-      const previousBid = auction.history.length > 0
-        ? auction.history[auction.history.length - 1].bid
-        : 0;
+      const previousBid =
+        auction.history.length > 0
+          ? auction.history[auction.history.length - 1].bid
+          : 0;
 
       // Track history
       auction.history.push({
@@ -297,12 +384,16 @@ async function checkTrackedAuctions(): Promise<AuctionAlert[]> {
         alerts.push({
           type: "new_bid",
           auction: auction.title,
-          message: `New bid! Was $${previousBid.toFixed(2)}, now ${status.currentBid}`,
+          message: `New bid! Was $${previousBid.toFixed(2)}, now ${
+            status.currentBid
+          }`,
           url: auction.url,
         });
       }
 
-      console.log(`     Current: ${status.currentBid} | Time: ${status.timeRemaining}`);
+      console.log(
+        `     Current: ${status.currentBid} | Time: ${status.timeRemaining}`
+      );
     }
 
     // Save updated tracking data
@@ -313,7 +404,12 @@ async function checkTrackedAuctions(): Promise<AuctionAlert[]> {
       console.log("\n" + "🚨".repeat(20));
       console.log("\nALERTS:");
       alerts.forEach((alert) => {
-        const icon = alert.type === "ending_soon" ? "⏰" : alert.type === "outbid" ? "💸" : "🔔";
+        const icon =
+          alert.type === "ending_soon"
+            ? "⏰"
+            : alert.type === "outbid"
+            ? "💸"
+            : "🔔";
         console.log(`\n${icon} ${alert.type.toUpperCase()}: ${alert.auction}`);
         console.log(`   ${alert.message}`);
       });
@@ -322,6 +418,16 @@ async function checkTrackedAuctions(): Promise<AuctionAlert[]> {
     return alerts;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // if (sessionId) {
+    // uncomment to download the video recording if you run with hyperbrowser
+    // await waitForVideoAndDownload(
+    //   sessionId,
+    //   "e-commerce",
+    //   "ebay-auction-check"
+    // );
+    //  }
   }
 }
 
@@ -337,4 +443,3 @@ searchAuctions("vintage rolex watch", {
 
 // Example: Check tracked auctions
 // checkTrackedAuctions();
-

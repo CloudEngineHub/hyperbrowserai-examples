@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -84,13 +90,28 @@ function parseSales(salesStr: string): number {
 
 async function analyzeEtsyShop(shopName: string): Promise<ShopAnalysis> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🛍️ Analyzing Etsy shop: ${shopName}\n`);
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     // Navigate to shop
     await page.goto(`https://www.etsy.com/shop/${shopName}`);
@@ -125,24 +146,32 @@ async function analyzeEtsyShop(shopName: string): Promise<ShopAnalysis> {
 
     // Calculate insights
     const listings = listingsData.listings;
-    const prices = listings.map((l) => parsePrice(l.price)).filter((p) => p > 0);
+    const prices = listings
+      .map((l) => parsePrice(l.price))
+      .filter((p) => p > 0);
 
     const insights = {
       priceRange: {
         min: prices.length > 0 ? Math.min(...prices) : 0,
         max: prices.length > 0 ? Math.max(...prices) : 0,
-        avg: prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0,
+        avg:
+          prices.length > 0
+            ? prices.reduce((a, b) => a + b, 0) / prices.length
+            : 0,
       },
       bestsellersCount: listings.filter((l) => l.isBestseller).length,
       saleItemsCount: listings.filter((l) => l.isOnSale).length,
-      freeShippingRate: listings.length > 0
-        ? (listings.filter((l) => l.freeShipping).length / listings.length) * 100
-        : 0,
-      reviewSentiment: parseFloat(reviewsData.averageRating) >= 4.5
-        ? "Excellent"
-        : parseFloat(reviewsData.averageRating) >= 4
-        ? "Good"
-        : "Mixed",
+      freeShippingRate:
+        listings.length > 0
+          ? (listings.filter((l) => l.freeShipping).length / listings.length) *
+            100
+          : 0,
+      reviewSentiment:
+        parseFloat(reviewsData.averageRating) >= 4.5
+          ? "Excellent"
+          : parseFloat(reviewsData.averageRating) >= 4
+          ? "Good"
+          : "Mixed",
     };
 
     // Display results
@@ -158,11 +187,17 @@ async function analyzeEtsyShop(shopName: string): Promise<ShopAnalysis> {
 
     console.log(`\n📊 PERFORMANCE`);
     console.log(`   Total Sales: ${profile.sales}`);
-    console.log(`   Rating: ${profile.rating} ⭐ (${profile.reviewCount} reviews)`);
+    console.log(
+      `   Rating: ${profile.rating} ⭐ (${profile.reviewCount} reviews)`
+    );
     console.log(`   Admirers: ${profile.admirers || "N/A"}`);
 
     console.log(`\n💰 PRICING`);
-    console.log(`   Price Range: $${insights.priceRange.min.toFixed(2)} - $${insights.priceRange.max.toFixed(2)}`);
+    console.log(
+      `   Price Range: $${insights.priceRange.min.toFixed(
+        2
+      )} - $${insights.priceRange.max.toFixed(2)}`
+    );
     console.log(`   Average Price: $${insights.priceRange.avg.toFixed(2)}`);
 
     console.log(`\n📦 LISTINGS (${listings.length} extracted)`);
@@ -184,25 +219,39 @@ async function analyzeEtsyShop(shopName: string): Promise<ShopAnalysis> {
     });
 
     sortedListings.slice(0, 5).forEach((listing, i) => {
-      const badges = [];
+      const badges: string[] = [];
       if (listing.isBestseller) badges.push("🏆 Bestseller");
       if (listing.isOnSale) badges.push("💸 Sale");
       if (listing.freeShipping) badges.push("📦 Free Ship");
 
       console.log(`\n   ${i + 1}. ${listing.title.substring(0, 50)}...`);
-      console.log(`      ${listing.price}${listing.originalPrice ? ` (was ${listing.originalPrice})` : ""}`);
-      console.log(`      ${listing.rating || "N/A"} ⭐ (${listing.reviewCount || "0"} reviews)`);
+      console.log(
+        `      ${listing.price}${
+          listing.originalPrice ? ` (was ${listing.originalPrice})` : ""
+        }`
+      );
+      console.log(
+        `      ${listing.rating || "N/A"} ⭐ (${
+          listing.reviewCount || "0"
+        } reviews)`
+      );
       if (badges.length > 0) console.log(`      ${badges.join(" | ")}`);
     });
 
     console.log(`\n⭐ REVIEWS`);
-    console.log(`   Average: ${reviewsData.averageRating} (${reviewsData.totalReviews} total)`);
+    console.log(
+      `   Average: ${reviewsData.averageRating} (${reviewsData.totalReviews} total)`
+    );
     console.log(`   Sentiment: ${insights.reviewSentiment}`);
 
     console.log(`\n   Recent Reviews:`);
     reviewsData.reviews.slice(0, 5).forEach((review, i) => {
       const photo = review.hasPhoto ? " 📷" : "";
-      console.log(`   ${i + 1}. ${"⭐".repeat(parseInt(review.rating))} by ${review.reviewer}${photo}`);
+      console.log(
+        `   ${i + 1}. ${"⭐".repeat(parseInt(review.rating))} by ${
+          review.reviewer
+        }${photo}`
+      );
       console.log(`      "${review.content.substring(0, 80)}..."`);
       if (review.item) console.log(`      Item: ${review.item}`);
     });
@@ -210,8 +259,10 @@ async function analyzeEtsyShop(shopName: string): Promise<ShopAnalysis> {
     // Policies
     if (profile.policies.shipping || profile.policies.returns) {
       console.log(`\n📋 POLICIES`);
-      if (profile.policies.shipping) console.log(`   Shipping: ${profile.policies.shipping}`);
-      if (profile.policies.returns) console.log(`   Returns: ${profile.policies.returns}`);
+      if (profile.policies.shipping)
+        console.log(`   Shipping: ${profile.policies.shipping}`);
+      if (profile.policies.returns)
+        console.log(`   Returns: ${profile.policies.returns}`);
     }
 
     return {
@@ -222,9 +273,13 @@ async function analyzeEtsyShop(shopName: string): Promise<ShopAnalysis> {
     };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "e-commerce", "etsy-shop-analyzer");
+    // }
   }
 }
 
 // Example usage
-analyzeEtsyShop("ThreeBirdNest");
-
+analyzeEtsyShop("ModPawsUS");
