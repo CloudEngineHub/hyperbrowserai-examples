@@ -9,6 +9,13 @@ import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
 
+// uncomment to view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
+
 config();
 
 const ThreadsProfileSchema = z.object({
@@ -57,23 +64,41 @@ function parseEngagement(str: string | null): number {
   return Math.round(num);
 }
 
-async function extractThreadsProfile(username: string): Promise<ThreadsExtraction> {
+async function extractThreadsProfile(
+  username: string
+): Promise<ThreadsExtraction> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`🧵 Extracting Threads profile: @${username}\n`);
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     // Navigate to Threads profile
     await page.goto(`https://www.threads.net/@${username}`);
     await page.waitForTimeout(4000);
 
     // Handle any popups
-    await page.aiAction("close any login popup or modal if present");
     await page.waitForTimeout(1000);
+
+    await page.aiAction("Scroll 100%");
 
     // Extract profile info
     console.log("  👤 Extracting profile...");
@@ -106,7 +131,8 @@ async function extractThreadsProfile(username: string): Promise<ThreadsExtractio
       totalPosts: posts.length,
       postsWithMedia: posts.filter((p) => p.hasMedia).length,
       reposts: posts.filter((p) => p.isRepost).length,
-      avgEngagement: posts.length > 0 ? Math.round(totalEngagement / posts.length) : 0,
+      avgEngagement:
+        posts.length > 0 ? Math.round(totalEngagement / posts.length) : 0,
     };
 
     // Display results
@@ -120,37 +146,59 @@ async function extractThreadsProfile(username: string): Promise<ThreadsExtractio
     console.log(`   Verified: ${profile.isVerified ? "✓ Yes" : "No"}`);
     console.log(`   Followers: ${profile.followerCount}`);
     if (profile.bio) {
-      console.log(`   Bio: ${profile.bio.substring(0, 80)}${profile.bio.length > 80 ? "..." : ""}`);
+      console.log(
+        `   Bio: ${profile.bio.substring(0, 80)}${
+          profile.bio.length > 80 ? "..." : ""
+        }`
+      );
     }
 
     console.log(`\n📊 STATS`);
     console.log(`   Posts extracted: ${stats.totalPosts}`);
-    console.log(`   Posts with media: ${stats.postsWithMedia} (${Math.round((stats.postsWithMedia / stats.totalPosts) * 100)}%)`);
+    console.log(
+      `   Posts with media: ${stats.postsWithMedia} (${Math.round(
+        (stats.postsWithMedia / stats.totalPosts) * 100
+      )}%)`
+    );
     console.log(`   Reposts: ${stats.reposts}`);
     console.log(`   Avg engagement: ${stats.avgEngagement.toLocaleString()}`);
 
     console.log(`\n📝 RECENT POSTS:`);
     posts.slice(0, 10).forEach((post, i) => {
       const mediaTag = post.hasMedia ? ` [${post.mediaType || "media"}]` : "";
-      const repostTag = post.isRepost ? ` (repost from @${post.originalAuthor})` : "";
-      const content = post.content.substring(0, 60) + (post.content.length > 60 ? "..." : "");
+      const repostTag = post.isRepost
+        ? ` (repost from @${post.originalAuthor})`
+        : "";
+      const content =
+        post.content.substring(0, 60) + (post.content.length > 60 ? "..." : "");
 
       console.log(`\n   ${i + 1}. "${content}"${mediaTag}${repostTag}`);
-      console.log(`      ${post.timestamp} | ❤️ ${post.likes || 0} | 💬 ${post.replies || 0} | 🔄 ${post.reposts || 0}`);
+      console.log(
+        `      ${post.timestamp} | ❤️ ${post.likes || 0} | 💬 ${
+          post.replies || 0
+        } | 🔄 ${post.reposts || 0}`
+      );
     });
 
     // Content analysis
     console.log(`\n📈 CONTENT ANALYSIS`);
     const originalPosts = posts.filter((p) => !p.isRepost);
-    const mediaRate = (posts.filter((p) => p.hasMedia).length / posts.length) * 100;
+    const mediaRate =
+      (posts.filter((p) => p.hasMedia).length / posts.length) * 100;
 
-    console.log(`   Original content: ${originalPosts.length}/${posts.length} posts`);
-    console.log(`   Media usage: ${Math.round(mediaRate)}% of posts include media`);
+    console.log(
+      `   Original content: ${originalPosts.length}/${posts.length} posts`
+    );
+    console.log(
+      `   Media usage: ${Math.round(mediaRate)}% of posts include media`
+    );
 
     // Top performing post
     const topPost = posts.reduce((best, post) => {
-      const engagement = parseEngagement(post.likes) + parseEngagement(post.replies);
-      const bestEngagement = parseEngagement(best.likes) + parseEngagement(best.replies);
+      const engagement =
+        parseEngagement(post.likes) + parseEngagement(post.replies);
+      const bestEngagement =
+        parseEngagement(best.likes) + parseEngagement(best.replies);
       return engagement > bestEngagement ? post : best;
     }, posts[0]);
 
@@ -163,11 +211,18 @@ async function extractThreadsProfile(username: string): Promise<ThreadsExtractio
     return { profile, posts, stats };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "social-media",
+    //     "threads-post-extractor"
+    //   );
+    // }
   }
 }
 
 // Example usage
 extractThreadsProfile("zuck");
-
-
-

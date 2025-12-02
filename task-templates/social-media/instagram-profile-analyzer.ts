@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// uncomment to view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -101,19 +107,34 @@ async function analyzeInstagramProfile(
   username: string
 ): Promise<ProfileAnalysis> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`📸 Analyzing Instagram profile: @${username}\n`);
 
+  let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
 
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     // Navigate to profile
     await page.goto(`https://www.instagram.com/${username}/`);
-    await page.waitForTimeout(4000);
 
     // Handle login prompt if it appears
+    await page.aiAction("click the x to close the login modal");
     await page.waitForTimeout(1000);
 
     // Extract profile info
@@ -152,7 +173,11 @@ async function analyzeInstagramProfile(
     console.log(`\n👤 PROFILE INFO`);
     console.log(`   Username: @${profile.username}`);
     console.log(`   Name: ${profile.fullName}`);
-    console.log(`   Bio: ${profile.bio.substring(0, 100)}${profile.bio.length > 100 ? "..." : ""}`);
+    console.log(
+      `   Bio: ${profile.bio.substring(0, 100)}${
+        profile.bio.length > 100 ? "..." : ""
+      }`
+    );
     console.log(`   Verified: ${profile.isVerified ? "✓ Yes" : "No"}`);
     console.log(`   Category: ${profile.category || "N/A"}`);
     console.log(`   Website: ${profile.externalUrl || "N/A"}`);
@@ -170,7 +195,11 @@ async function analyzeInstagramProfile(
     console.log(`\n📷 RECENT POSTS (${postsData.posts.length})`);
     postsData.posts.slice(0, 5).forEach((post, i) => {
       const sponsored = post.isSponsored ? " [SPONSORED]" : "";
-      console.log(`   ${i + 1}. ${post.type}${sponsored} - ${post.likes || "?"} likes, ${post.comments || "?"} comments`);
+      console.log(
+        `   ${i + 1}. ${post.type}${sponsored} - ${post.likes || "?"} likes, ${
+          post.comments || "?"
+        } comments`
+      );
     });
 
     // Content breakdown
@@ -188,17 +217,30 @@ async function analyzeInstagramProfile(
     const sponsoredCount = postsData.posts.filter((p) => p.isSponsored).length;
     if (sponsoredCount > 0) {
       console.log(`\n💰 SPONSORED CONTENT`);
-      console.log(`   ${sponsoredCount} of ${postsData.posts.length} recent posts are sponsored (${Math.round((sponsoredCount / postsData.posts.length) * 100)}%)`);
+      console.log(
+        `   ${sponsoredCount} of ${
+          postsData.posts.length
+        } recent posts are sponsored (${Math.round(
+          (sponsoredCount / postsData.posts.length) * 100
+        )}%)`
+      );
     }
 
     return result;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "social-media",
+    //     "instagram-profile-analyzer"
+    //   );
+    // }
   }
 }
 
 // Example usage
 analyzeInstagramProfile("cristiano");
-
-
-
