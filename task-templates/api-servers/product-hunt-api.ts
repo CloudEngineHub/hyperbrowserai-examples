@@ -9,11 +9,12 @@ import express, { Request, Response } from "express";
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+import { videoSessionConfig } from "../utils/video-recording";
 
 config();
 
 const app = express();
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.PORT || 3001;
 
 const ProductSchema = z.object({
   products: z.array(
@@ -77,7 +78,7 @@ app.get("/api/ph/weekly", async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 20;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
   });
 
   try {
@@ -109,12 +110,23 @@ app.get("/api/ph/monthly", async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 20;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    browserProvider: "Hyperbrowser",
+    hyperbrowserConfig: {
+      sessionConfig: {
+        useUltraStealth: true,
+        useProxy: true,
+        adblock: true,
+        ...videoSessionConfig,
+      },
+    },
   });
 
   try {
     const page = await agent.newPage();
-    await page.goto("https://www.producthunt.com");
+    await page.goto("https://www.producthunt.com", {
+      waitUntil: "domcontentloaded",
+    });
     await await page.aiAction("scroll to Last Month's Top Products section");
 
     await page.aiAction("click See all of last month's top products");

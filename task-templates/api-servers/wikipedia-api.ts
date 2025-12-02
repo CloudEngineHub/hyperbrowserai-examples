@@ -9,11 +9,12 @@ import express, { Request, Response } from "express";
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+import { videoSessionConfig } from "../utils/video-recording";
 
 config();
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3001;
 
 const ArticleSummarySchema = z.object({
   title: z.string(),
@@ -50,7 +51,7 @@ app.get("/api/wiki/summary/:title", async (req: Request, res: Response) => {
   const { lang = "en" } = req.query;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
   });
 
   try {
@@ -80,7 +81,19 @@ app.get("/api/wiki/infobox/:title", async (req: Request, res: Response) => {
   const { lang = "en" } = req.query;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // llm: { provider: "anthropic", model: "claude-sonnet-4-0" },
+
+    browserProvider: "Hyperbrowser",
+    hyperbrowserConfig: {
+      sessionConfig: {
+        useUltraStealth: true,
+        useProxy: true,
+        adblock: true,
+        ...videoSessionConfig,
+      },
+    },
+    debug: true,
   });
 
   try {
@@ -88,8 +101,7 @@ app.get("/api/wiki/infobox/:title", async (req: Request, res: Response) => {
     const url = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(
       title
     )}`;
-    await page.goto(url);
-    await page.waitForTimeout(2000);
+    await page.goto(url, { waitUntil: "domcontentloaded" });
 
     const result = await page.extract(
       "Extract the article title, all key-value pairs from the infobox sidebar, and the main image URL if present",
@@ -150,7 +162,7 @@ app.get("/api/wiki/random", async (req: Request, res: Response) => {
   const { lang = "en" } = req.query;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
   });
 
   try {
@@ -176,7 +188,7 @@ app.get("/api/wiki/today", async (req: Request, res: Response) => {
   const { lang = "en" } = req.query;
 
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
   });
 
   try {
