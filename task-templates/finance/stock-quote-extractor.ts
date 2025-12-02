@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -77,15 +83,34 @@ function formatChange(change: string, percent: string): string {
   return `${arrow} ${color}${change} (${percent})`;
 }
 
-async function getStockQuote(symbol: string, includeDetails: boolean = false): Promise<StockData> {
+async function getStockQuote(
+  symbol: string,
+  includeDetails: boolean = false
+): Promise<StockData> {
   const agent = new HyperAgent({
     llm: { provider: "openai", model: "gpt-4o-mini" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`📊 Getting stock quote for: ${symbol.toUpperCase()}\n`);
 
+  // let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     await page.goto(`https://finance.yahoo.com/quote/${symbol.toUpperCase()}`);
     await page.waitForTimeout(3000);
 
@@ -144,8 +169,10 @@ async function getStockQuote(symbol: string, includeDetails: boolean = false): P
 
       if (details.analystRating || details.priceTarget) {
         console.log(`\n🎯 ANALYST OUTLOOK`);
-        if (details.analystRating) console.log(`   Rating: ${details.analystRating}`);
-        if (details.priceTarget) console.log(`   Price Target: ${details.priceTarget}`);
+        if (details.analystRating)
+          console.log(`   Rating: ${details.analystRating}`);
+        if (details.priceTarget)
+          console.log(`   Price Target: ${details.priceTarget}`);
       }
 
       if (details.summary) {
@@ -165,15 +192,34 @@ async function getStockQuote(symbol: string, includeDetails: boolean = false): P
     return { quote, details };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(sessionId, "finance", "stock-quote-extractor");
+    // }
   }
 }
 
-async function getMultipleQuotes(symbols: string[]): Promise<Map<string, z.infer<typeof StockQuoteSchema>>> {
+async function getMultipleQuotes(
+  symbols: string[]
+): Promise<Map<string, z.infer<typeof StockQuoteSchema>>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   const quotes = new Map<string, z.infer<typeof StockQuoteSchema>>();
+  // let sessionId: string | null = null;
 
   console.log(`📊 Getting quotes for ${symbols.length} stocks...\n`);
 
@@ -182,7 +228,15 @@ async function getMultipleQuotes(symbols: string[]): Promise<Map<string, z.infer
       console.log(`  Fetching ${symbol}...`);
 
       const page = await agent.newPage();
-      await page.goto(`https://finance.yahoo.com/quote/${symbol.toUpperCase()}`);
+
+      // Get session ID after first page is initialized
+      // if (!sessionId) {
+      //   sessionId = getSessionId(agent);
+      // }
+
+      await page.goto(
+        `https://finance.yahoo.com/quote/${symbol.toUpperCase()}`
+      );
       await page.waitForTimeout(2500);
 
       try {
@@ -211,7 +265,9 @@ async function getMultipleQuotes(symbols: string[]): Promise<Map<string, z.infer
     console.log("\n" + "=".repeat(70));
     console.log("STOCK QUOTES SUMMARY");
     console.log("=".repeat(70));
-    console.log("\nSymbol    | Price        | Change          | Volume      | Mkt Cap");
+    console.log(
+      "\nSymbol    | Price        | Change          | Volume      | Mkt Cap"
+    );
     console.log("-".repeat(70));
 
     quotes.forEach((quote, symbol) => {
@@ -219,24 +275,54 @@ async function getMultipleQuotes(symbols: string[]): Promise<Map<string, z.infer
       const price = quote.price.padEnd(12);
       const change = `${quote.change} (${quote.changePercent})`.padEnd(15);
       const vol = quote.volume.padEnd(11);
-      console.log(`${sym} | ${price} | ${change} | ${vol} | ${quote.marketCap}`);
+      console.log(
+        `${sym} | ${price} | ${change} | ${vol} | ${quote.marketCap}`
+      );
     });
 
     return quotes;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "finance",
+    //     "stock-multiple-quotes"
+    //   );
+    // }
   }
 }
 
-async function getMarketOverview(): Promise<z.infer<typeof MarketOverviewSchema>> {
+async function getMarketOverview(): Promise<
+  z.infer<typeof MarketOverviewSchema>
+> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log(`📊 Getting market overview...\n`);
 
+  // let sessionId: string | null = null;
+
   try {
     const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     await page.goto("https://finance.yahoo.com/");
     await page.waitForTimeout(3000);
 
@@ -254,19 +340,38 @@ async function getMarketOverview(): Promise<z.infer<typeof MarketOverviewSchema>
 
     console.log("\n📈 MAJOR INDICES");
     overview.indices.forEach((index) => {
-      console.log(`   ${index.name}: ${index.value} ${formatChange(index.change, index.changePercent)}`);
+      console.log(
+        `   ${index.name}: ${index.value} ${formatChange(
+          index.change,
+          index.changePercent
+        )}`
+      );
     });
 
     console.log("\n🔥 TRENDING STOCKS");
     overview.trending.slice(0, 10).forEach((stock, i) => {
       const isPositive = !stock.change.includes("-");
       const arrow = isPositive ? "⬆️" : "⬇️";
-      console.log(`   ${i + 1}. ${stock.symbol} (${stock.name}): ${stock.price} ${arrow} ${stock.change}`);
+      console.log(
+        `   ${i + 1}. ${stock.symbol} (${stock.name}): ${
+          stock.price
+        } ${arrow} ${stock.change}`
+      );
     });
 
     return overview;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    //  if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "finance",
+    //     "stock-market-overview"
+    //   );
+    // }
   }
 }
 
@@ -278,6 +383,3 @@ getStockQuote("AAPL", true);
 
 // Example: Get market overview
 // getMarketOverview();
-
-
-

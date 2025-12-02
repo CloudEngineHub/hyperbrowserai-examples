@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -51,7 +57,16 @@ const HistoricalRateSchema = z.object({
   }),
 });
 
-const MAJOR_CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"];
+const MAJOR_CURRENCIES = [
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "CHF",
+  "CAD",
+  "AUD",
+  "CNY",
+];
 
 interface ConversionResult {
   from: { currency: string; amount: number };
@@ -65,18 +80,35 @@ async function getExchangeRate(
   to: string
 ): Promise<z.infer<typeof ExchangeRateSchema>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
-  console.log(`💱 Getting exchange rate: ${from.toUpperCase()} → ${to.toUpperCase()}\n`);
+  console.log(
+    `💱 Getting exchange rate: ${from.toUpperCase()} → ${to.toUpperCase()}\n`
+  );
+
+  // let sessionId: string | null = null;
 
   try {
     const page = await agent.newPage();
-    await page.goto(`https://www.xe.com/currencyconverter/convert/?Amount=1&From=${from.toUpperCase()}&To=${to.toUpperCase()}`);
-    await page.waitForTimeout(3000);
 
-    await page.aiAction("close cookie banner if present");
-    await page.waitForTimeout(1000);
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
+    await page.goto(
+      `https://www.xe.com/currencyconverter/convert/?Amount=1&From=${from.toUpperCase()}&To=${to.toUpperCase()}`
+    );
+    await page.waitForTimeout(3000);
 
     const result = await page.extract(
       "Extract exchange rate information: from currency, to currency, exchange rate, inverse rate, last updated time, 24h change amount, and 24h change percentage",
@@ -89,15 +121,20 @@ async function getExchangeRate(
     console.log("=".repeat(50));
 
     console.log(`\n💰 CURRENT RATE`);
-    console.log(`   1 ${result.fromCurrency} = ${result.rate} ${result.toCurrency}`);
-    console.log(`   1 ${result.toCurrency} = ${result.inverseRate} ${result.fromCurrency}`);
+    console.log(
+      `   1 ${result.fromCurrency} = ${result.rate} ${result.toCurrency}`
+    );
+    console.log(
+      `   1 ${result.toCurrency} = ${result.inverseRate} ${result.fromCurrency}`
+    );
 
     if (result.change24h || result.changePercent) {
       const isPositive = result.change24h && !result.change24h.includes("-");
       const arrow = isPositive ? "📈" : "📉";
       console.log(`\n${arrow} 24H CHANGE`);
       if (result.change24h) console.log(`   Amount: ${result.change24h}`);
-      if (result.changePercent) console.log(`   Percent: ${result.changePercent}`);
+      if (result.changePercent)
+        console.log(`   Percent: ${result.changePercent}`);
     }
 
     if (result.lastUpdated) {
@@ -107,6 +144,16 @@ async function getExchangeRate(
     return result;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    //  if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "finance",
+    //     "currency-exchange-rate"
+    //   );
+    // }
   }
 }
 
@@ -116,14 +163,34 @@ async function convertCurrency(
   to: string
 ): Promise<ConversionResult> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
-  console.log(`💱 Converting ${amount} ${from.toUpperCase()} to ${to.toUpperCase()}\n`);
+  console.log(
+    `💱 Converting ${amount} ${from.toUpperCase()} to ${to.toUpperCase()}\n`
+  );
+
+  // let sessionId: string | null = null;
 
   try {
     const page = await agent.newPage();
-    await page.goto(`https://www.xe.com/currencyconverter/convert/?Amount=${amount}&From=${from.toUpperCase()}&To=${to.toUpperCase()}`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
+    await page.goto(
+      `https://www.xe.com/currencyconverter/convert/?Amount=${amount}&From=${from.toUpperCase()}&To=${to.toUpperCase()}`
+    );
     await page.waitForTimeout(3000);
 
     const ConversionSchema = z.object({
@@ -149,8 +216,15 @@ async function convertCurrency(
 
     console.log(`\n   ${amount.toLocaleString()} ${from.toUpperCase()}`);
     console.log(`   ↓`);
-    console.log(`   ${toAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${to.toUpperCase()}`);
-    console.log(`\n   Rate: 1 ${from.toUpperCase()} = ${rate} ${to.toUpperCase()}`);
+    console.log(
+      `   ${toAmount.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })} ${to.toUpperCase()}`
+    );
+    console.log(
+      `\n   Rate: 1 ${from.toUpperCase()} = ${rate} ${to.toUpperCase()}`
+    );
 
     return {
       from: { currency: from.toUpperCase(), amount },
@@ -160,19 +234,51 @@ async function convertCurrency(
     };
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "finance",
+    //     "currency-conversion"
+    //   );
+    // }
   }
 }
 
-async function getMajorRates(baseCurrency: string = "USD"): Promise<z.infer<typeof MultiRateSchema>> {
+async function getMajorRates(
+  baseCurrency: string = "USD"
+): Promise<z.infer<typeof MultiRateSchema>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
-  console.log(`💱 Getting major currency rates for ${baseCurrency.toUpperCase()}\n`);
+  console.log(
+    `💱 Getting major currency rates for ${baseCurrency.toUpperCase()}\n`
+  );
+
+  // let sessionId: string | null = null;
 
   try {
     const page = await agent.newPage();
-    await page.goto(`https://www.xe.com/currencytables/?from=${baseCurrency.toUpperCase()}`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
+    await page.goto(
+      `https://www.xe.com/currencytables/?from=${baseCurrency.toUpperCase()}`
+    );
     await page.waitForTimeout(3000);
 
     await page.aiAction("close cookie banner if present");
@@ -188,7 +294,9 @@ async function getMajorRates(baseCurrency: string = "USD"): Promise<z.infer<type
     console.log(`EXCHANGE RATES - BASE: ${baseCurrency.toUpperCase()}`);
     console.log("=".repeat(60));
 
-    console.log("\nCurrency | Name                    | Rate           | Change");
+    console.log(
+      "\nCurrency | Name                    | Rate           | Change"
+    );
     console.log("-".repeat(60));
 
     // Filter to show major currencies first
@@ -214,6 +322,16 @@ async function getMajorRates(baseCurrency: string = "USD"): Promise<z.infer<type
     return result;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //      await waitForVideoAndDownload(
+    //     sessionId,
+    //     "finance",
+    //     "currency-major-rates"
+    //   );
+    // }
   }
 }
 
@@ -222,14 +340,34 @@ async function getHistoricalRates(
   to: string
 ): Promise<z.infer<typeof HistoricalRateSchema>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
-  console.log(`📈 Getting historical rates: ${from.toUpperCase()}/${to.toUpperCase()}\n`);
+  console.log(
+    `📈 Getting historical rates: ${from.toUpperCase()}/${to.toUpperCase()}\n`
+  );
+
+  // let sessionId: string | null = null;
 
   try {
     const page = await agent.newPage();
-    await page.goto(`https://www.xe.com/currencycharts/?from=${from.toUpperCase()}&to=${to.toUpperCase()}`);
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
+    await page.goto(
+      `https://www.xe.com/currencycharts/?from=${from.toUpperCase()}&to=${to.toUpperCase()}`
+    );
     await page.waitForTimeout(3000);
 
     await page.aiAction("close cookie banner if present");
@@ -266,17 +404,42 @@ async function getHistoricalRates(
     return result;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    // await waitForVideoAndDownload(
+    //   sessionId,
+    //   "finance",
+    //   "currency-historical-rates"
+    // );
+    // }
   }
 }
 
-async function createRateMatrix(currencies: string[]): Promise<Map<string, Map<string, string>>> {
+async function createRateMatrix(
+  currencies: string[]
+): Promise<Map<string, Map<string, string>>> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   const matrix = new Map<string, Map<string, string>>();
+  // let sessionId: string | null = null;
 
-  console.log(`💱 Creating exchange rate matrix for ${currencies.length} currencies...\n`);
+  console.log(
+    `💱 Creating exchange rate matrix for ${currencies.length} currencies...\n`
+  );
 
   try {
     for (const base of currencies) {
@@ -284,6 +447,12 @@ async function createRateMatrix(currencies: string[]): Promise<Map<string, Map<s
       matrix.set(base, new Map());
 
       const page = await agent.newPage();
+
+      // Get session ID after first page is initialized
+      // if (!sessionId) {
+      // sessionId = getSessionId(agent);
+      //  }
+
       await page.goto(`https://www.xe.com/currencytables/?from=${base}`);
       await page.waitForTimeout(2500);
 
@@ -338,6 +507,16 @@ async function createRateMatrix(currencies: string[]): Promise<Map<string, Map<s
     return matrix;
   } finally {
     await agent.closeAgent();
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "finance",
+    //     "currency-rate-matrix"
+    //   );
+    // }
   }
 }
 
@@ -355,6 +534,3 @@ getExchangeRate("USD", "EUR");
 
 // Example: Create rate matrix
 // createRateMatrix(["USD", "EUR", "GBP", "JPY"]);
-
-
-
