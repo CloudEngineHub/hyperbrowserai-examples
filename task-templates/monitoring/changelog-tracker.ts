@@ -8,6 +8,12 @@
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
+// if you want you can view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 config();
 
@@ -24,15 +30,30 @@ const ChangelogSchema = z.object({
 
 async function scrapeChangelog(changelogUrl: string) {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    // ...videoSessionConfig,
+    //   },
+    // },
   });
 
   console.log("📋 Changelog Scraper\n");
   console.log("=".repeat(70) + "\n");
 
-  const page = await agent.newPage();
+  // let sessionId: string | null = null;
 
   try {
+    const page = await agent.newPage();
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
+
     await page.goto(changelogUrl, {
       waitUntil: "domcontentloaded",
       timeout: 30000,
@@ -58,7 +79,11 @@ async function scrapeChangelog(changelogUrl: string) {
       console.log(`${i + 1}. ${entry.title}`);
       console.log(`   Version: ${entry.version}`);
       console.log(`   Date: ${entry.date}`);
-      console.log(`   ${entry.description.substring(0, 150)}${entry.description.length > 150 ? "..." : ""}`);
+      console.log(
+        `   ${entry.description.substring(0, 150)}${
+          entry.description.length > 150 ? "..." : ""
+        }`
+      );
       console.log("-".repeat(70));
     });
 
@@ -68,11 +93,17 @@ async function scrapeChangelog(changelogUrl: string) {
     throw error;
   } finally {
     await agent.closeAgent();
+
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "monitoring",
+    //     "changelog-tracker"
+    //   );
+    // }
   }
 }
 
 // Example: Scrape Vercel changelog
 scrapeChangelog("https://vercel.com/changelog");
-
-// Example: Scrape another changelog
-// scrapeChangelog("https://supabase.com/changelog");

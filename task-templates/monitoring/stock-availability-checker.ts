@@ -9,6 +9,13 @@ import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
 import { config } from "dotenv";
 
+// uncomment to view the video recording if you run with hyperbrowser
+// import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
+
 config();
 
 const StockStatusSchema = z.object({
@@ -39,7 +46,7 @@ interface StockAlert {
 const TRACKED_ITEMS: TrackedItem[] = [
   {
     name: "NVIDIA RTX 4090",
-    url: "https://www.bestbuy.com/site/nvidia-geforce-rtx-4090/6521430.p",
+    url: "https://www.bestbuy.com/product/nvidia-geforce-rtx-5090-32gb-gddr7-founders-edition-graphics-card-dark-gun-metal/J3GWYHGPCP",
     retailer: "BestBuy",
   },
   {
@@ -62,67 +69,45 @@ const TRACKED_ITEMS: TrackedItem[] = [
 // Simulated previous stock state (in real usage, load from file/db)
 const previousStockState: Map<string, boolean> = new Map();
 
-async function checkItemStock(
-  agent: HyperAgent,
-  item: TrackedItem
-): Promise<StockAlert | null> {
-  const page = await agent.newPage();
-
-  try {
-    await page.goto(item.url);
-    await page.waitForTimeout(3000);
-
-    // Handle common popups
-    await page.aiAction("close any popup or modal if present");
-    await page.waitForTimeout(1000);
-
-    const status = await page.extract(
-      "Extract product name, stock availability (in stock or out of stock), current price, quantity available if shown, estimated delivery date, seller name, and condition (new/used)",
-      StockStatusSchema
-    );
-
-    const wasOutOfStock = previousStockState.get(item.url) === false;
-    previousStockState.set(item.url, status.inStock);
-
-    // Only alert if item just came back in stock
-    if (status.inStock && wasOutOfStock) {
-      return {
-        item,
-        status,
-        previouslyOutOfStock: true,
-        timestamp: new Date().toISOString(),
-      };
-    }
-
-    return null;
-  } catch (error) {
-    console.error(`Error checking ${item.name}:`, error);
-    return null;
-  }
-}
-
 async function checkAllItems(items: TrackedItem[]): Promise<{
   alerts: StockAlert[];
-  statuses: Array<{ item: TrackedItem; status: z.infer<typeof StockStatusSchema> | null }>;
+  statuses: Array<{
+    item: TrackedItem;
+    status: z.infer<typeof StockStatusSchema> | null;
+  }>;
 }> {
   const agent = new HyperAgent({
-    llm: { provider: "openai", model: "gpt-4o-mini" },
+    llm: { provider: "openai", model: "gpt-4o" },
+    // uncomment to run with hyperbrowser provider
+    // browserProvider: "Hyperbrowser",
+    // hyperbrowserConfig: {
+    //   sessionConfig: {
+    //     useUltraStealth: true,
+    //     useProxy: true,
+    //     adblock: true,
+    //     ...videoSessionConfig,
+    //   },
+    // },
   });
 
   const alerts: StockAlert[] = [];
   const statuses: Array<{ item: TrackedItem; status: any }> = [];
+  let sessionId: string | null = null;
 
   try {
     for (const item of items) {
       console.log(`  📦 Checking ${item.name} at ${item.retailer}...`);
 
       const page = await agent.newPage();
+
+      // Get session ID after first page is initialized
+      // if (!sessionId) {
+      //   sessionId = getSessionId(agent);
+      // }
+
       try {
         await page.goto(item.url);
-        await page.waitForTimeout(3000);
-
-        await page.aiAction("close any popup or modal if present");
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(20000);
 
         const status = await page.extract(
           "Extract product name, stock availability (in stock or out of stock), current price, quantity available if shown, estimated delivery date, seller name, and condition (new/used)",
@@ -156,6 +141,15 @@ async function checkAllItems(items: TrackedItem[]): Promise<{
     return { alerts, statuses };
   } finally {
     await agent.closeAgent();
+
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    //   await waitForVideoAndDownload(
+    //     sessionId,
+    //     "monitoring",
+    //     "stock-availability-checker"
+    //   );
+    // }
   }
 }
 
@@ -188,7 +182,9 @@ async function runStockChecker(items?: TrackedItem[]) {
   console.log("=".repeat(50));
 
   const inStockCount = statuses.filter((s) => s.status?.inStock).length;
-  const outOfStockCount = statuses.filter((s) => s.status && !s.status.inStock).length;
+  const outOfStockCount = statuses.filter(
+    (s) => s.status && !s.status.inStock
+  ).length;
   const errorCount = statuses.filter((s) => !s.status).length;
 
   console.log(`\n📊 Results:`);
@@ -211,7 +207,11 @@ async function runStockChecker(items?: TrackedItem[]) {
     if (status) {
       const icon = status.inStock ? "✅" : "❌";
       const price = status.price || "N/A";
-      console.log(`   ${icon} ${item.name} (${item.retailer}): ${status.inStock ? `IN STOCK - ${price}` : "OUT OF STOCK"}`);
+      console.log(
+        `   ${icon} ${item.name} (${item.retailer}): ${
+          status.inStock ? `IN STOCK - ${price}` : "OUT OF STOCK"
+        }`
+      );
     } else {
       console.log(`   ⚠️ ${item.name} (${item.retailer}): Error checking`);
     }
@@ -223,6 +223,4 @@ async function runStockChecker(items?: TrackedItem[]) {
 // Run the checker
 runStockChecker();
 
-// For continuous monitoring, you could could schedule this script
-
-
+// For continuous monitoring, you could schedule this script
