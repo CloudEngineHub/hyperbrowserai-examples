@@ -8,6 +8,12 @@
 import "dotenv/config";
 import { HyperAgent } from "@hyperbrowser/agent";
 import { z } from "zod";
+// if you want you can view the video recording if you run with hyperbrowser
+//  import {
+//   videoSessionConfig,
+//   waitForVideoAndDownload,
+//   getSessionId,
+// } from "../utils/video-recording";
 
 // Extract schema
 const XPageSchema = z.object({
@@ -30,15 +36,26 @@ type XPageResult = z.infer<typeof XPageSchema>;
  */
 async function extractXPage(): Promise<XPageResult> {
   let agent: HyperAgent | null = null;
+  let sessionId: string | null = null;
 
   try {
     // Initialize HyperAgent
     console.log("Initializing HyperAgent...");
     agent = new HyperAgent({
       llm: {
-        provider: "anthropic",
-        model: "claude-sonnet-4-0",
+        provider: "openai",
+        model: "gpt-4o",
       },
+      // uncomment to run with hyperbrowser provider
+      // browserProvider: "Hyperbrowser",
+      //   hyperbrowserConfig: {
+      //     sessionConfig: {
+      //       useUltraStealth: true,
+      //       useProxy: true,
+      //       adblock: true,
+      //       ...videoSessionConfig,
+      //     },
+      //   },
     });
 
     // Get the page instance
@@ -46,6 +63,9 @@ async function extractXPage(): Promise<XPageResult> {
     if (!page) {
       throw new Error("Failed to get page instance from HyperAgent");
     }
+
+    // Get session ID after browser is initialized
+    // sessionId = getSessionId(agent);
 
     // Navigate to Twitter
     await page.goto("https://x.com/hyperbrowser");
@@ -79,6 +99,13 @@ async function extractXPage(): Promise<XPageResult> {
         console.error("Error closing HyperAgent:", err);
       }
     }
+
+    // Download video recording
+    // uncomment to download the video recording if you run with hyperbrowser
+    // if (sessionId) {
+    // uncomment to download the video recording if you run with hyperbrowser
+    // await waitForVideoAndDownload(sessionId, "data-extraction", "x-hyperbrowser-posts");
+    // }
   }
 }
 
