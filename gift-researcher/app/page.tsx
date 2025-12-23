@@ -57,7 +57,7 @@ export default function Home() {
   })
 
   const loadingMessages = [
-    "Scanning Reddit discussions...",
+    "Scanning web discussions...",
     "Analyzing gift guides...",
     "Reading product reviews...",
     "Finding hidden gems...",

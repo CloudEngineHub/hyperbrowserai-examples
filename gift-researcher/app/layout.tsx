@@ -10,7 +10,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "Deep Gift Research - AI-Powered Gift Recommendations",
-  description: "Find the perfect gift backed by deep web research. AI analyzes Reddit discussions, reviews, and expert guides to recommend personalized gifts.",
+  description: "Find the perfect gift backed by deep web research. AI analyzes web discussions, reviews, and expert guides to recommend personalized gifts.",
   keywords: ["gift ideas", "gift recommendations", "AI gift finder", "personalized gifts"],
   authors: [{ name: "Hyperbrowser" }],
   openGraph: {

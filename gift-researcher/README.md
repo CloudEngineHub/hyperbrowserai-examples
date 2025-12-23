@@ -2,13 +2,13 @@
 
 # Deep Gift Research 🎁
 
-An AI-powered gift research engine that scrapes Reddit and the web to find the perfect gift for anyone in seconds. Instead of generic lists, it reads real discussions to find authentic recommendations.
+An AI-powered gift research engine that scrapes the web to find the perfect gift for anyone in seconds. Instead of generic lists, it reads real discussions to find authentic recommendations.
 
 ![Gift App](public/window.svg)
 
 ## Features
-- **Deep Web Scraping**: Uses **Hyperbrowser** to browse Reddit threads and Google results live.
-- **AI Analysis**: Claude 3.5 Sonnet reads the scraped content to extract hidden gems.
+- **Deep Web Scraping**: Uses **Hyperbrowser** to browse web pages and Google results live.
+- **AI Analysis**: Claude 4.5 Sonnet reads the scraped content to extract hidden gems.
 - **Personalized**: Tailors results to specific interests, age, and vibe.
 - **Festive UI**: A clean, minimal interface with a touch of holiday magic.
 
@@ -51,7 +51,7 @@ HYPERBROWSER_API_KEY=your_hyperbrowser_key_here
 
 ### 3. Usage
 1. Enter "My Dad", "55", "Woodworking, Coffee", "Practical".
-2. Watch as the app scrapes Reddit r/woodworking and r/coffee threads.
+2. Watch as the app scrapes web discussions and product reviews.
 3. Get 5 perfect tool or bean recommendations in 30 seconds.
 
 ## Use Case for Growth
