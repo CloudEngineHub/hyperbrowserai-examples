@@ -30,8 +30,6 @@ export async function POST(req: Request) {
 
     // 1. Construct Search Queries
     const baseQuery = `best gift ideas for ${age ? age + " year old " : ""}${recipient} who likes ${interests} ${vibe ? vibe + " style" : ""} ${budget ? "budget " + budget : ""}`
-    const redditQuery = `${baseQuery} site:reddit.com`
-    const amazonQuery = `${interests} gift ${budget || ""}`
     
     console.log("Search query:", baseQuery)
 
@@ -40,20 +38,20 @@ export async function POST(req: Request) {
     // 2. Scrape with Hyperbrowser if available (optimized for speed)
     if (hyperbrowser) {
       try {
-        // Use direct Reddit search instead of Google (faster and lighter)
-        const redditSearchUrl = `https://www.reddit.com/search/?q=${encodeURIComponent(baseQuery + " gift recommendations")}&type=link&sort=relevance`
+        // Use Google search to find gift recommendations
+        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(baseQuery + " recommendations")}`
         
-        console.log("Scraping Reddit with Hyperbrowser SDK:", redditSearchUrl)
+        console.log("Scraping web with Hyperbrowser SDK:", searchUrl)
         console.time("hyperbrowser-scrape")
         
         // Single, faster scrape instead of multiple
-        const redditData = await scrapeUrl(redditSearchUrl)
+        const webData = await scrapeUrl(searchUrl)
         
         console.timeEnd("hyperbrowser-scrape")
 
-        if (redditData) {
-          scrapedData += "=== Reddit Gift Discussions ===\n" + redditData.substring(0, 10000)
-          console.log("✓ Successfully scraped Reddit data, length:", scrapedData.length)
+        if (webData) {
+          scrapedData += "=== Web Gift Discussions ===\n" + webData.substring(0, 10000)
+          console.log("✓ Successfully scraped web data, length:", scrapedData.length)
         } else {
           console.log("⚠ Scraping returned no data, will use Claude's knowledge only")
         }
